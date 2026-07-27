@@ -2,7 +2,7 @@
   "name": "anidata",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@11.15.1",
+  "packageManager": "yarn@4.17.1",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,6 +10,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "framer-motion": "^12.42.2",
     "next": "16.2.12",
     "react": "19.2.4",
     "react-dom": "19.2.4"
