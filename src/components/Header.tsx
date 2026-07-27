@@ -75,19 +75,6 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden items-center gap-3 md:flex">
-            <button className="text-sm font-medium text-muted transition-colors hover:text-foreground">
-              Sign In
-            </button>
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="rounded-full bg-gradient-to-r from-brand-1 to-brand-2 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-500/30"
-            >
-              Sign Up
-            </motion.button>
-          </div>
-
           <ThemeToggle />
 
           <button
@@ -126,14 +113,6 @@ export default function Header() {
                   {link.label}
                 </a>
               ))}
-              <div className="mt-3 flex gap-2">
-                <button className="flex-1 rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground">
-                  Sign In
-                </button>
-                <button className="flex-1 rounded-full bg-gradient-to-r from-brand-1 to-brand-2 px-4 py-2 text-sm font-semibold text-white">
-                  Sign Up
-                </button>
-              </div>
             </nav>
           </motion.div>
         )}

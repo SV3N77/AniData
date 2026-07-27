@@ -16,16 +16,7 @@ export default function SearchHero({
       <div className="absolute inset-0 bg-[radial-gradient(50%_100%_at_80%_0%,rgba(167,139,250,0.16),transparent_60%)]" />
 
       <div className="relative mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted"
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          The open anime encyclopedia
-        </motion.div>
-
+ 
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -89,21 +80,7 @@ export default function SearchHero({
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mx-auto mt-14 grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-4"
-        >
-          {stats.map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-surface px-4 py-4">
-              <div className="bg-gradient-to-r from-brand-1 to-brand-2 bg-clip-text text-2xl font-black text-transparent">
-                {s.value}
-              </div>
-              <div className="mt-1 text-xs text-muted">{s.label}</div>
-            </div>
-          ))}
-        </motion.div>
+       
       </div>
     </section>
   );

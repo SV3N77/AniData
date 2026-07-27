@@ -47,7 +47,9 @@ AniData/
 │   │   ├── Header.tsx
 │   │   ├── RankedTable.tsx
 │   │   ├── SearchHero.tsx
-│   │   └── SeasonalSection.tsx
+│   │   ├── SeasonalSection.tsx
+│   │   ├── ThemeProvider.tsx
+│   │   └── ThemeToggle.tsx
 │   └── lib/
 │       ├── anilist.ts       # AniList API client
 │       ├── fetchers.ts      # Data fetching helpers
