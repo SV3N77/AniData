@@ -29,12 +29,7 @@ A web application built with Next.js (App Router).
 
 ```
 AniData/
-├── public/                  # Static assets (SVGs)
-│   ├── file.svg
-│   ├── globe.svg
-│   ├── next.svg
-│   ├── vercel.svg
-│   └── window.svg
+├── public/                  # Static assets
 ├── src/
 │   ├── app/                 # Next.js App Router
 │   │   ├── favicon.ico
@@ -43,9 +38,9 @@ AniData/
 │   │   └── page.tsx         # Home page
 │   ├── components/          # React components
 │   │   ├── Footer.tsx
-│   │   ├── GenreGrid.tsx
 │   │   ├── Header.tsx
 │   │   ├── RankedTable.tsx
+│   │   ├── ScheduleSection.tsx
 │   │   ├── SearchHero.tsx
 │   │   ├── SeasonalSection.tsx
 │   │   ├── ThemeProvider.tsx

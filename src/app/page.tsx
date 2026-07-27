@@ -3,11 +3,11 @@ import Footer from "@/components/Footer";
 import SearchHero from "@/components/SearchHero";
 import RankedTable from "@/components/RankedTable";
 import SeasonalSection from "@/components/SeasonalSection";
-import GenreGrid from "@/components/GenreGrid";
+import ScheduleSection from "@/components/ScheduleSection";
 import { getHomeData } from "@/lib/fetchers";
 
 export default async function Home() {
-  const { topAnime, seasonalAnime, trending, genres, stats, seasons } =
+  const { topAnime, seasonalAnime, trending, stats, seasons, schedule } =
     await getHomeData();
 
   return (
@@ -17,7 +17,7 @@ export default async function Home() {
         <SearchHero trending={trending} stats={stats} />
         <RankedTable anime={topAnime} />
         <SeasonalSection anime={seasonalAnime} seasons={seasons} />
-        <GenreGrid genres={genres} />
+        <ScheduleSection schedule={schedule} />
       </main>
       <Footer />
     </>

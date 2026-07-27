@@ -18,6 +18,16 @@ export type AnimeItem = {
   color: string;
 };
 
-export type GenreItem = { name: string; color: string };
-
 export type StatItem = { value: string; label: string };
+
+export type ScheduleItem = {
+  id: number;
+  mediaId: number;
+  title: string;
+  cover: string;
+  color: string;
+  format: string;
+  episode: number;
+  airingAt: number;
+  timeUntilAiring: number;
+};

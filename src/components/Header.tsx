@@ -8,7 +8,6 @@ const navLinks = [
   { label: "Browse", href: "#top-anime" },
   { label: "Top Anime", href: "#top-anime" },
   { label: "Seasonal", href: "#seasonal" },
-  { label: "Genres", href: "#genres" },
   { label: "Characters", href: "#" },
   { label: "Studios", href: "#" },
 ];

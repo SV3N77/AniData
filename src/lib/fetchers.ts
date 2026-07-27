@@ -1,14 +1,15 @@
 import {
   anilistFetch,
-  GENRE_COLORS,
   getCurrentSeason,
   getRecentSeasons,
+  mapAiringSchedule,
   mapMedia,
   MEDIA_FIELDS,
   pickTitle,
+  type RawAiringSchedule,
   type RawMedia,
 } from "./anilist";
-import type { AnimeItem, GenreItem, StatItem } from "./types";
+import type { AnimeItem, ScheduleItem, StatItem } from "./types";
 
 export async function getTopAnime(perPage = 20): Promise<AnimeItem[]> {
   const data = await anilistFetch<{ Page: { media: RawMedia[] } }>(
@@ -59,16 +60,38 @@ export async function getTrendingSearches(perPage = 6): Promise<string[]> {
   return data.Page.media.map((m) => pickTitle(m.title));
 }
 
-export async function getGenres(): Promise<GenreItem[]> {
-  const data = await anilistFetch<{ GenreCollection: string[] }>(
-    `query Genres { GenreCollection }`,
+export async function getAiringSchedule(
+  perPage = 12,
+  days = 7,
+): Promise<ScheduleItem[]> {
+  const from = Math.floor(Date.now() / 1000);
+  const to = from + days * 24 * 60 * 60;
+  const data = await anilistFetch<{
+    Page: { airingSchedules: RawAiringSchedule[] };
+  }>(
+    `query Schedule($from: Int, $to: Int) {
+      Page(page: 1, perPage: ${perPage}) {
+        airingSchedules(airingAt_greater: $from, airingAt_lesser: $to) {
+          id
+          airingAt
+          timeUntilAiring
+          episode
+          mediaId
+          media {
+            id
+            title { english romaji native }
+            coverImage { large color }
+            format
+          }
+        }
+      }
+    }`,
+    { from, to },
   );
-  return (data.GenreCollection ?? [])
-    .filter((g): g is string => Boolean(g))
-    .map((name) => ({
-      name,
-      color: GENRE_COLORS[name] ?? "#6366f1",
-    }));
+  return data.Page.airingSchedules
+    .filter((s) => Boolean(s.media))
+    .sort((a, b) => a.airingAt - b.airingAt)
+    .map(mapAiringSchedule);
 }
 
 export async function getStats(): Promise<StatItem[]> {
@@ -112,9 +135,9 @@ export type HomeData = {
   topAnime: AnimeItem[];
   seasonalAnime: AnimeItem[];
   trending: string[];
-  genres: GenreItem[];
   stats: StatItem[];
   seasons: string[];
+  schedule: ScheduleItem[];
 };
 
 async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
@@ -127,14 +150,14 @@ async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
 }
 
 export async function getHomeData(): Promise<HomeData> {
-  const [topAnime, seasonalAnime, trending, genres, stats, seasons] =
+  const [topAnime, seasonalAnime, trending, stats, seasons, schedule] =
     await Promise.all([
       safe(getTopAnime(20), [] as AnimeItem[]),
       safe(getSeasonalAnime(6), [] as AnimeItem[]),
       safe(getTrendingSearches(6), [] as string[]),
-      safe(getGenres(), [] as GenreItem[]),
       safe(getStats(), [] as StatItem[]),
       getRecentSeasons(3),
+      safe(getAiringSchedule(12), [] as ScheduleItem[]),
     ]);
-  return { topAnime, seasonalAnime, trending, genres, stats, seasons };
+  return { topAnime, seasonalAnime, trending, stats, seasons, schedule };
 }

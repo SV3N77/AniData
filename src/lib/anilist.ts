@@ -1,4 +1,4 @@
-import type { AnimeItem, AnimeStatus } from "./types";
+import type { AnimeItem, AnimeStatus, ScheduleItem } from "./types";
 
 const ANILIST_ENDPOINT = "https://graphql.anilist.co";
 
@@ -82,6 +82,30 @@ export function pickTitle(t: RawMedia["title"]): string {
   return t.english ?? t.romaji ?? t.native ?? "Untitled";
 }
 
+export type RawAiringSchedule = {
+  id: number;
+  airingAt: number;
+  timeUntilAiring: number;
+  episode: number;
+  mediaId: number;
+  media: RawMedia | null;
+};
+
+export function mapAiringSchedule(s: RawAiringSchedule): ScheduleItem {
+  const m = s.media;
+  return {
+    id: s.id,
+    mediaId: s.mediaId,
+    title: m ? pickTitle(m.title) : "Unknown",
+    cover: m?.coverImage?.large ?? "",
+    color: m?.coverImage?.color ?? "#a855f7",
+    format: m?.format ?? "TV",
+    episode: s.episode,
+    airingAt: s.airingAt,
+    timeUntilAiring: s.timeUntilAiring,
+  };
+}
+
 function mapStatus(status: string | null): AnimeStatus {
   switch (status) {
     case "RELEASING":
@@ -133,27 +157,6 @@ export function mapMedia(m: RawMedia): AnimeItem {
     color: m.coverImage?.color ?? "#a855f7",
   };
 }
-
-export const GENRE_COLORS: Record<string, string> = {
-  Action: "#ef4444",
-  Adventure: "#f59e0b",
-  Comedy: "#eab308",
-  Drama: "#ec4899",
-  Fantasy: "#a855f7",
-  Horror: "#64748b",
-  Mecha: "#06b6d4",
-  Mystery: "#3b82f6",
-  Romance: "#f43f5e",
-  "Sci-Fi": "#8b5cf6",
-  "Slice of Life": "#10b981",
-  Sports: "#14b8a6",
-  Supernatural: "#7c3aed",
-  Thriller: "#0ea5e9",
-  Psychological: "#d946ef",
-  Music: "#3b82f6",
-  Ecchi: "#f97316",
-  Award: "#facc15",
-};
 
 export type Season = "WINTER" | "SPRING" | "SUMMER" | "FALL";
 
