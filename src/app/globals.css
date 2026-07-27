@@ -1,13 +1,48 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #000000;
-  --foreground: #ededed;
+  --background: #f5f3ff;
+  --foreground: #2e1065;
+  --muted: #475569;
+  --subtle: #64748b;
+  --surface: #ffffff;
+  --surface-hover: #f5f3ff;
+  --surface-2: #ede9fe;
+  --border: rgba(76, 29, 149, 0.12);
+  --accent: #7c3aed;
+  --accent-strong: #6d28d9;
+  --brand-1: #8b5cf6;
+  --brand-2: #9333ea;
+}
+
+.dark {
+  --background: #0d0b1a;
+  --foreground: #ede9fe;
+  --muted: #cbd5e1;
+  --subtle: #94a3b8;
+  --surface: #17121f;
+  --surface-hover: #221a30;
+  --surface-2: #221a30;
+  --border: rgba(167, 139, 250, 0.14);
+  --accent: #a78bfa;
+  --accent-strong: #c4b5fd;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-brand-1: var(--brand-1);
+  --color-brand-2: var(--brand-2);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

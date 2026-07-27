@@ -13,7 +13,7 @@ export default async function Home() {
   return (
     <>
       <Header />
-      <main className="flex-1 bg-black">
+      <main className="flex-1 bg-background">
         <SearchHero trending={trending} stats={stats} />
         <RankedTable anime={topAnime} />
         <SeasonalSection anime={seasonalAnime} seasons={seasons} />
