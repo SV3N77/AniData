@@ -6,6 +6,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { AnimeItem } from "@/lib/types";
 import type { AnimePageInfo, MediaSortOption } from "@/lib/fetchers";
 
+const ANILIST_MAX_ENTRIES = 5000;
+
 const sortTabs: { label: string; value: MediaSortOption }[] = [
   { label: "Top Rated", value: "SCORE_DESC" },
   { label: "Most Popular", value: "POPULARITY_DESC" },
@@ -104,9 +106,14 @@ export default function TopAnimeExplorer({
   }, [searchInput, search, buildUrl, router]);
 
   const { currentPage, total, perPage } = pageInfo;
-  const lastPage = Math.max(1, pageInfo.lastPage);
+  const maxPage = Math.max(1, Math.floor(ANILIST_MAX_ENTRIES / perPage));
+  const totalPages = Math.max(1, Math.min(maxPage, Math.ceil(total / perPage)));
+  const lastPage = pageInfo.hasNextPage
+    ? totalPages
+    : Math.min(totalPages, Math.max(1, currentPage));
   const rangeStart = anime.length === 0 ? 0 : (currentPage - 1) * perPage + 1;
-  const rangeEnd = Math.min(currentPage * perPage, total);
+  const cappedTotal = Math.min(total, maxPage * perPage);
+  const rangeEnd = Math.min(currentPage * perPage, cappedTotal);
 
   const hasFilters =
     status !== "All" ||
@@ -145,7 +152,7 @@ export default function TopAnimeExplorer({
                 <span className="font-semibold text-foreground">
                   {rangeStart.toLocaleString()}–{rangeEnd.toLocaleString()}
                 </span>{" "}
-                of {total.toLocaleString()}
+                of {cappedTotal.toLocaleString()}
               </>
             ) : (
               "No results"
@@ -426,7 +433,7 @@ export default function TopAnimeExplorer({
 
           <button
             onClick={() => goToPage(currentPage + 1)}
-            disabled={!pageInfo.hasNextPage}
+            disabled={currentPage >= lastPage}
             className="flex h-9 items-center gap-1 rounded-md border border-border bg-surface px-3 text-xs font-medium text-muted transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
           >
             <span className="hidden sm:inline">Next</span>
