@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { AnimeItem } from "@/lib/types";
 
-const tabs = ["Top Rated", "Most Popular", "Currently Airing"] as const;
+const tabs = ["Top Rated", "Most Popular"] as const;
 type Tab = (typeof tabs)[number];
 
 export default function RankedTable({ anime }: { anime: AnimeItem[] }) {
@@ -13,11 +13,6 @@ export default function RankedTable({ anime }: { anime: AnimeItem[] }) {
   const sorted = (() => {
     if (tab === "Most Popular") {
       return [...anime].sort((a, b) => b.popularity - a.popularity);
-    }
-    if (tab === "Currently Airing") {
-      return anime
-        .filter((a) => a.status === "Airing")
-        .sort((a, b) => b.score - a.score);
     }
     return [...anime].sort((a, b) => b.score - a.score);
   })().slice(0, 10);
@@ -58,13 +53,12 @@ export default function RankedTable({ anime }: { anime: AnimeItem[] }) {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-        <div className="hidden grid-cols-[3rem_1fr_5rem_5rem_6rem_7rem] gap-4 border-b border-border px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-subtle md:grid">
+        <div className="hidden grid-cols-[3rem_1fr_5rem_5rem_6rem] gap-4 border-b border-border px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-subtle md:grid">
           <div>Rank</div>
           <div>Title</div>
           <div className="text-right">Score</div>
           <div className="text-right">Type</div>
           <div className="text-right">Eps</div>
-          <div className="text-right">Members</div>
         </div>
 
         <AnimatePresence mode="popLayout">
@@ -77,7 +71,7 @@ export default function RankedTable({ anime }: { anime: AnimeItem[] }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.3, delay: i * 0.03 }}
-              className="group grid grid-cols-[2rem_1fr_auto] items-center gap-3 border-b border-border px-4 py-3 transition-colors hover:bg-surface-hover md:grid-cols-[3rem_1fr_5rem_5rem_6rem_7rem] md:gap-4 md:px-5"
+              className="group grid grid-cols-[2rem_1fr_auto] items-center gap-3 border-b border-border px-4 py-3 transition-colors hover:bg-surface-hover md:grid-cols-[3rem_1fr_5rem_5rem_6rem] md:gap-4 md:px-5"
             >
               <div className="flex items-center justify-center">
                 <span
@@ -145,10 +139,6 @@ export default function RankedTable({ anime }: { anime: AnimeItem[] }) {
                 {a.episodes ?? "—"}
               </div>
 
-              <div className="hidden text-right text-sm tabular-nums text-muted md:block">
-                {a.members}
-              </div>
-
               <div className="flex items-center justify-end md:hidden">
                 <div className="flex items-center gap-1 rounded-md bg-surface-2 px-2 py-1">
                   <svg className="h-3 w-3 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
@@ -164,7 +154,7 @@ export default function RankedTable({ anime }: { anime: AnimeItem[] }) {
 
       <div className="mt-4 text-center">
         <a
-          href="#"
+          href="/top-anime"
           className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:text-accent-strong"
         >
           View all rankings

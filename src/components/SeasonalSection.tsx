@@ -94,7 +94,6 @@ export default function SeasonalSection({
                   </svg>
                   <span className="font-semibold text-muted">{a.score}</span>
                 </span>
-                <span>{a.members}</span>
                 <span className="ml-auto truncate">{a.genres[0]}</span>
               </div>
             </div>

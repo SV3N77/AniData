@@ -5,8 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const navLinks = [
-  { label: "Browse", href: "#top-anime" },
-  { label: "Top Anime", href: "#top-anime" },
+  { label: "Top Anime", href: "/top-anime" },
   { label: "Seasonal", href: "#seasonal" },
   { label: "Characters", href: "#" },
   { label: "Studios", href: "#" },
@@ -24,7 +23,7 @@ export default function Header() {
       className="sticky top-0 z-50 w-full border-b border-border bg-background/70 backdrop-blur-xl"
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <a href="#" className="flex items-center gap-2">
+        <a href="/" className="flex items-center gap-2">
           <motion.div
             whileHover={{ rotate: 12, scale: 1.05 }}
             className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand-1 to-brand-2 text-sm font-black text-white shadow-lg shadow-violet-500/30"

@@ -24,6 +24,97 @@ export async function getTopAnime(perPage = 20): Promise<AnimeItem[]> {
   return data.Page.media.map(mapMedia);
 }
 
+export type MediaSortOption = "SCORE_DESC" | "POPULARITY_DESC";
+
+export type AnimePageParams = {
+  page?: number;
+  perPage?: number;
+  sort?: MediaSortOption;
+  status?: string | null;
+  format?: string | null;
+  genre?: string | null;
+  search?: string | null;
+};
+
+export type AnimePageInfo = {
+  currentPage: number;
+  hasNextPage: boolean;
+  lastPage: number;
+  total: number;
+  perPage: number;
+};
+
+export type AnimePage = {
+  anime: AnimeItem[];
+  pageInfo: AnimePageInfo;
+};
+
+export async function getAnimePage(
+  params: AnimePageParams,
+): Promise<AnimePage> {
+  const page = Math.max(1, params.page ?? 1);
+  const perPage = Math.max(1, params.perPage ?? 50);
+  const sort: MediaSortOption = params.sort ?? "SCORE_DESC";
+
+  const variables: Record<string, unknown> = {
+    page,
+    perPage,
+    sort: [sort],
+  };
+  if (params.status) variables.status = params.status;
+  if (params.format) variables.format = params.format;
+  if (params.genre) variables.genre = params.genre;
+  if (params.search?.trim()) variables.search = params.search.trim();
+
+  const data = await anilistFetch<{
+    Page: { pageInfo: AnimePageInfo; media: RawMedia[] };
+  }>(
+    `query AnimePage(
+      $page: Int
+      $perPage: Int
+      $sort: [MediaSort]
+      $status: MediaStatus
+      $format: MediaFormat
+      $genre: String
+      $search: String
+    ) {
+      Page(page: $page, perPage: $perPage) {
+        pageInfo {
+          currentPage
+          hasNextPage
+          lastPage
+          total
+          perPage
+        }
+        media(
+          type: ANIME
+          sort: $sort
+          status: $status
+          format: $format
+          genre: $genre
+          search: $search
+          isAdult: false
+        ) {
+          ${MEDIA_FIELDS}
+        }
+      }
+    }`,
+    variables,
+  );
+
+  return {
+    anime: data.Page.media.map(mapMedia),
+    pageInfo: data.Page.pageInfo,
+  };
+}
+
+export async function getGenres(): Promise<string[]> {
+  const data = await anilistFetch<{ GenreCollection: string[] | null }>(
+    `query Genres { GenreCollection }`,
+  );
+  return data.GenreCollection ?? [];
+}
+
 export async function getSeasonalAnime(perPage = 6): Promise<AnimeItem[]> {
   const { season, year } = getCurrentSeason();
   const data = await anilistFetch<{ Page: { media: RawMedia[] } }>(
