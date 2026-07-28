@@ -1,13 +1,12 @@
 import {
   anilistFetch,
-  getCurrentSeason,
-  getRecentSeasons,
   mapAiringSchedule,
   mapMedia,
   MEDIA_FIELDS,
   pickTitle,
   type RawAiringSchedule,
   type RawMedia,
+  type Season,
 } from "./anilist";
 import type { AnimeItem, ScheduleItem, StatItem } from "./types";
 
@@ -115,25 +114,74 @@ export async function getGenres(): Promise<string[]> {
   return data.GenreCollection ?? [];
 }
 
-export async function getSeasonalAnime(perPage = 6): Promise<AnimeItem[]> {
-  const { season, year } = getCurrentSeason();
-  const data = await anilistFetch<{ Page: { media: RawMedia[] } }>(
-    `query Seasonal($season: MediaSeason, $year: Int) {
-      Page(page: 1, perPage: ${perPage}) {
+export type SeasonalPageParams = AnimePageParams & {
+  season: Season;
+  year: number;
+};
+
+export async function getSeasonalPage(
+  params: SeasonalPageParams,
+): Promise<AnimePage> {
+  const page = Math.max(1, params.page ?? 1);
+  const perPage = Math.max(1, params.perPage ?? 24);
+  const sort: MediaSortOption = params.sort ?? "POPULARITY_DESC";
+
+  const variables: Record<string, unknown> = {
+    page,
+    perPage,
+    sort: [sort],
+    season: params.season,
+    seasonYear: params.year,
+  };
+  if (params.status) variables.status = params.status;
+  if (params.format) variables.format = params.format;
+  if (params.genre) variables.genre = params.genre;
+  if (params.search?.trim()) variables.search = params.search.trim();
+
+  const data = await anilistFetch<{
+    Page: { pageInfo: AnimePageInfo; media: RawMedia[] };
+  }>(
+    `query SeasonalPage(
+      $page: Int
+      $perPage: Int
+      $sort: [MediaSort]
+      $season: MediaSeason
+      $seasonYear: Int
+      $status: MediaStatus
+      $format: MediaFormat
+      $genre: String
+      $search: String
+    ) {
+      Page(page: $page, perPage: $perPage) {
+        pageInfo {
+          currentPage
+          hasNextPage
+          lastPage
+          total
+          perPage
+        }
         media(
           type: ANIME
           season: $season
-          seasonYear: $year
-          sort: POPULARITY_DESC
+          seasonYear: $seasonYear
+          sort: $sort
+          status: $status
+          format: $format
+          genre: $genre
+          search: $search
           isAdult: false
         ) {
           ${MEDIA_FIELDS}
         }
       }
     }`,
-    { season, year },
+    variables,
   );
-  return data.Page.media.map(mapMedia);
+
+  return {
+    anime: data.Page.media.map(mapMedia),
+    pageInfo: data.Page.pageInfo,
+  };
 }
 
 export async function getTrendingSearches(perPage = 6): Promise<string[]> {
@@ -224,10 +272,8 @@ export async function getStats(): Promise<StatItem[]> {
 
 export type HomeData = {
   topAnime: AnimeItem[];
-  seasonalAnime: AnimeItem[];
   trending: string[];
   stats: StatItem[];
-  seasons: string[];
   schedule: ScheduleItem[];
 };
 
@@ -241,14 +287,11 @@ async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
 }
 
 export async function getHomeData(): Promise<HomeData> {
-  const [topAnime, seasonalAnime, trending, stats, seasons, schedule] =
-    await Promise.all([
-      safe(getTopAnime(20), [] as AnimeItem[]),
-      safe(getSeasonalAnime(6), [] as AnimeItem[]),
-      safe(getTrendingSearches(6), [] as string[]),
-      safe(getStats(), [] as StatItem[]),
-      getRecentSeasons(3),
-      safe(getAiringSchedule(12), [] as ScheduleItem[]),
-    ]);
-  return { topAnime, seasonalAnime, trending, stats, seasons, schedule };
+  const [topAnime, trending, stats, schedule] = await Promise.all([
+    safe(getTopAnime(20), [] as AnimeItem[]),
+    safe(getTrendingSearches(6), [] as string[]),
+    safe(getStats(), [] as StatItem[]),
+    safe(getAiringSchedule(12), [] as ScheduleItem[]),
+  ]);
+  return { topAnime, trending, stats, schedule };
 }

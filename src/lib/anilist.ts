@@ -172,21 +172,31 @@ export function getCurrentSeason(): { season: Season; year: number } {
   return { season, year };
 }
 
-export function getRecentSeasons(count = 3): string[] {
+export type SeasonOption = { season: Season; year: number; label: string };
+
+export function getSeasonOptions(back = 12, forward = 4): SeasonOption[] {
   const { season, year } = getCurrentSeason();
   const order: Season[] = ["WINTER", "SPRING", "SUMMER", "FALL"];
-  let idx = order.indexOf(season);
-  let y = year;
-  const labels: { season: Season; year: number }[] = [];
-  for (let i = 0; i < count; i++) {
-    labels.push({ season: order[idx], year: y });
-    idx -= 1;
-    if (idx < 0) {
-      idx = order.length - 1;
+  const startIdx = order.indexOf(season);
+
+  const options: SeasonOption[] = [];
+  for (let offset = -back; offset <= forward; offset++) {
+    let idx = startIdx + offset;
+    let y = year;
+    while (idx < 0) {
+      idx += 4;
       y -= 1;
     }
+    while (idx >= 4) {
+      idx -= 4;
+      y += 1;
+    }
+    const s = order[idx];
+    options.push({
+      season: s,
+      year: y,
+      label: `${s.charAt(0)}${s.slice(1).toLowerCase()} ${y}`,
+    });
   }
-  return labels.map(
-    (l) => `${l.season.charAt(0)}${l.season.slice(1).toLowerCase()} ${l.year}`,
-  );
+  return options;
 }

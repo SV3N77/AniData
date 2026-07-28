@@ -2,13 +2,11 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SearchHero from "@/components/SearchHero";
 import RankedTable from "@/components/RankedTable";
-import SeasonalSection from "@/components/SeasonalSection";
 import ScheduleSection from "@/components/ScheduleSection";
 import { getHomeData } from "@/lib/fetchers";
 
 export default async function Home() {
-  const { topAnime, seasonalAnime, trending, stats, seasons, schedule } =
-    await getHomeData();
+  const { topAnime, trending, stats, schedule } = await getHomeData();
 
   return (
     <>
@@ -16,7 +14,6 @@ export default async function Home() {
       <main className="flex-1 bg-background">
         <SearchHero trending={trending} stats={stats} />
         <RankedTable anime={topAnime} />
-        <SeasonalSection anime={seasonalAnime} seasons={seasons} />
         <ScheduleSection schedule={schedule} />
       </main>
       <Footer />

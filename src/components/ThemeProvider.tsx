@@ -15,8 +15,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark");
-    setTheme(isDark ? "dark" : "light");
+    try {
+      const stored = localStorage.getItem("anidata-theme");
+      if (stored === "light" || stored === "dark") {
+        setTheme(stored);
+      }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   useEffect(() => {

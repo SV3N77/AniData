@@ -6,9 +6,9 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 const navLinks = [
   { label: "Top Anime", href: "/top-anime" },
-  { label: "Seasonal", href: "#seasonal" },
-  { label: "Characters", href: "#" },
-  { label: "Studios", href: "#" },
+  { label: "Seasonal", href: "/seasonal" },
+  { label: "Characters", href: "/characters" },
+  { label: "Studios", href: "/studios" },
 ];
 
 export default function Header() {
