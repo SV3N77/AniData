@@ -59,9 +59,6 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row">
-          <p className="text-sm text-subtle">
-            &copy; {new Date().getFullYear()} AniData. All rights reserved.
-          </p>
           <p className="text-sm text-subtle">Made with passion for anime fans.</p>
         </div>
       </div>

@@ -76,6 +76,7 @@ export type RawMedia = {
   startDate: { year: number | null } | null;
   studios: { nodes: { name: string }[] | null } | null;
   description: string | null;
+  isAdult?: boolean | null;
 };
 
 export function pickTitle(t: RawMedia["title"]): string {

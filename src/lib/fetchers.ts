@@ -1,5 +1,6 @@
 import {
   anilistFetch,
+  getCurrentSeason,
   mapAiringSchedule,
   mapMedia,
   MEDIA_FIELDS,
@@ -200,35 +201,52 @@ export async function getTrendingSearches(perPage = 6): Promise<string[]> {
 }
 
 export async function getAiringSchedule(
-  perPage = 12,
+  perPage = 50,
   days = 7,
 ): Promise<ScheduleItem[]> {
   const from = Math.floor(Date.now() / 1000);
   const to = from + days * 24 * 60 * 60;
-  const data = await anilistFetch<{
-    Page: { airingSchedules: RawAiringSchedule[] };
-  }>(
-    `query Schedule($from: Int, $to: Int) {
-      Page(page: 1, perPage: ${perPage}) {
-        airingSchedules(airingAt_greater: $from, airingAt_lesser: $to) {
-          id
-          airingAt
-          timeUntilAiring
-          episode
-          mediaId
-          media {
+  const MAX_PAGES = 20;
+
+  const collected: RawAiringSchedule[] = [];
+  let page = 1;
+  let hasNextPage = true;
+
+  while (hasNextPage && page <= MAX_PAGES) {
+    const data = await anilistFetch<{
+      Page: {
+        airingSchedules: RawAiringSchedule[];
+        pageInfo: { hasNextPage: boolean };
+      };
+    }>(
+      `query Schedule($from: Int, $to: Int) {
+        Page(page: ${page}, perPage: ${perPage}) {
+          pageInfo { hasNextPage }
+          airingSchedules(airingAt_greater: $from, airingAt_lesser: $to) {
             id
-            title { english romaji native }
-            coverImage { large color }
-            format
+            airingAt
+            timeUntilAiring
+            episode
+            mediaId
+            media {
+              id
+              title { english romaji native }
+              coverImage { large color }
+              format
+              isAdult
+            }
           }
         }
-      }
-    }`,
-    { from, to },
-  );
-  return data.Page.airingSchedules
-    .filter((s) => Boolean(s.media))
+      }`,
+      { from, to },
+    );
+    collected.push(...data.Page.airingSchedules);
+    hasNextPage = data.Page.pageInfo.hasNextPage;
+    page += 1;
+  }
+
+  return collected
+    .filter((s) => Boolean(s.media) && !s.media!.isAdult)
     .sort((a, b) => a.airingAt - b.airingAt)
     .map(mapAiringSchedule);
 }
@@ -275,6 +293,8 @@ export type HomeData = {
   trending: string[];
   stats: StatItem[];
   schedule: ScheduleItem[];
+  seasonal: AnimeItem[];
+  seasonLabel: string;
 };
 
 async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
@@ -287,11 +307,18 @@ async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
 }
 
 export async function getHomeData(): Promise<HomeData> {
-  const [topAnime, trending, stats, schedule] = await Promise.all([
+  const { season, year } = getCurrentSeason();
+  const seasonLabel = `${season.charAt(0)}${season.slice(1).toLowerCase()} ${year}`;
+
+  const [topAnime, trending, stats, schedule, seasonal] = await Promise.all([
     safe(getTopAnime(20), [] as AnimeItem[]),
     safe(getTrendingSearches(6), [] as string[]),
     safe(getStats(), [] as StatItem[]),
-    safe(getAiringSchedule(12), [] as ScheduleItem[]),
+    safe(getAiringSchedule(), [] as ScheduleItem[]),
+    safe(
+      getSeasonalPage({ season, year, perPage: 6 }).then((r) => r.anime),
+      [] as AnimeItem[],
+    ),
   ]);
-  return { topAnime, trending, stats, schedule };
+  return { topAnime, trending, stats, schedule, seasonal, seasonLabel };
 }
