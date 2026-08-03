@@ -26,7 +26,7 @@ export default function Header() {
         <a href="/" className="flex items-center gap-2">
           <motion.div
             whileHover={{ rotate: 12, scale: 1.05 }}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand-1 to-brand-2 text-sm font-black text-white shadow-lg shadow-violet-500/30"
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand-1 to-brand-2 text-sm font-black text-white shadow-lg shadow-primary/30"
           >
             A
           </motion.div>

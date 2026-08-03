@@ -32,6 +32,13 @@ AniData/
 ├── public/                  # Static assets
 ├── src/
 │   ├── app/                 # Next.js App Router
+│   │   ├── api/
+│   │   │   └── seasonal/
+│   │   │       └── route.ts # Seasonal API route
+│   │   ├── seasonal/
+│   │   │   └── page.tsx     # Seasonal explorer page
+│   │   ├── top-anime/
+│   │   │   └── page.tsx     # Top anime page
 │   │   ├── favicon.ico
 │   │   ├── globals.css      # Global styles (Tailwind import)
 │   │   ├── layout.tsx       # Root layout
@@ -42,9 +49,11 @@ AniData/
 │   │   ├── RankedTable.tsx
 │   │   ├── ScheduleSection.tsx
 │   │   ├── SearchHero.tsx
+│   │   ├── SeasonalExplorer.tsx
 │   │   ├── SeasonalSection.tsx
 │   │   ├── ThemeProvider.tsx
-│   │   └── ThemeToggle.tsx
+│   │   ├── ThemeToggle.tsx
+│   │   └── TopAnimeExplorer.tsx
 │   └── lib/
 │       ├── anilist.ts       # AniList API client
 │       ├── fetchers.ts      # Data fetching helpers

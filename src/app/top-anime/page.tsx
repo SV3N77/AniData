@@ -60,8 +60,8 @@ export default async function TopAnimePage({
       <Header />
       <main className="flex-1 bg-background">
         <section className="relative overflow-hidden border-b border-border">
-          <div className="absolute inset-0 bg-[radial-gradient(60%_120%_at_50%_0%,rgba(139,92,246,0.12),transparent_60%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(50%_100%_at_80%_0%,rgba(167,139,250,0.16),transparent_60%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(60%_120%_at_50%_0%,color-mix(in_oklch,var(--primary)_14%,transparent),transparent_60%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(50%_100%_at_80%_0%,color-mix(in_oklch,var(--accent)_16%,transparent),transparent_60%)]" />
           <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
             <div className="flex items-center gap-2">
               <span className="h-5 w-1 rounded-full bg-gradient-to-b from-brand-1 to-brand-2" />

@@ -99,7 +99,7 @@ export function mapAiringSchedule(s: RawAiringSchedule): ScheduleItem {
     mediaId: s.mediaId,
     title: m ? pickTitle(m.title) : "Unknown",
     cover: m?.coverImage?.large ?? "",
-    color: m?.coverImage?.color ?? "#a855f7",
+    color: m?.coverImage?.color ?? "#d24a2c",
     format: m?.format ?? "TV",
     episode: s.episode,
     airingAt: s.airingAt,
@@ -155,7 +155,7 @@ export function mapMedia(m: RawMedia): AnimeItem {
     genres: m.genres ?? [],
     studio: m.studios?.nodes?.[0]?.name ?? "Unknown",
     synopsis: stripHtml(m.description),
-    color: m.coverImage?.color ?? "#a855f7",
+    color: m.coverImage?.color ?? "#d24a2c",
   };
 }
 

@@ -12,8 +12,8 @@ export default function SearchHero({
 }) {
   return (
     <section className="relative overflow-hidden border-b border-border">
-      <div className="absolute inset-0 bg-[radial-gradient(60%_120%_at_50%_0%,rgba(139,92,246,0.12),transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(50%_100%_at_80%_0%,rgba(167,139,250,0.16),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(60%_120%_at_50%_0%,color-mix(in_oklch,var(--primary)_14%,transparent),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(50%_100%_at_80%_0%,color-mix(in_oklch,var(--accent)_16%,transparent),transparent_60%)]" />
 
       <div className="relative mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
  
