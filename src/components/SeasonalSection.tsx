@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { AnimeItem } from "@/lib/types";
+import { buildAnimeSlug } from "@/lib/slug";
 
 export default function SeasonalSection({
   anime,
@@ -45,7 +46,7 @@ export default function SeasonalSection({
         {anime.map((a, i) => (
           <motion.a
             key={a.id}
-            href="#"
+            href={`/anime/${buildAnimeSlug(a.id, a.title)}`}
             layout
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}

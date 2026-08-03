@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { AnimeItem } from "@/lib/types";
+import { buildAnimeSlug } from "@/lib/slug";
 
 const tabs = ["Top Rated", "Most Popular"] as const;
 type Tab = (typeof tabs)[number];
@@ -65,7 +66,7 @@ export default function RankedTable({ anime }: { anime: AnimeItem[] }) {
           {sorted.map((a, i) => (
             <motion.a
               key={a.id}
-              href="#"
+              href={`/anime/${buildAnimeSlug(a.id, a.title)}`}
               layout
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}

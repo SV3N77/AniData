@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { AnimeItem } from "@/lib/types";
 import type { AnimePageInfo, MediaSortOption } from "@/lib/fetchers";
 import type { Season, SeasonOption } from "@/lib/anilist";
+import { buildAnimeSlug } from "@/lib/slug";
 
 const sortTabs: { label: string; value: MediaSortOption }[] = [
   { label: "Most Popular", value: "POPULARITY_DESC" },
@@ -472,7 +473,7 @@ export default function SeasonalExplorer({
                 {items.map((a, i) => (
                   <motion.a
                     key={a.id}
-                    href="#"
+                    href={`/anime/${buildAnimeSlug(a.id, a.title)}`}
                     layout
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}

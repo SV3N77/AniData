@@ -2,14 +2,28 @@ import {
   anilistFetch,
   getCurrentSeason,
   mapAiringSchedule,
+  mapCharacterConnection,
   mapMedia,
+  mapMediaDetail,
+  mapStaffConnection,
+  MEDIA_DETAIL_FIELDS,
   MEDIA_FIELDS,
   pickTitle,
+  type CharacterEdgeRaw,
   type RawAiringSchedule,
   type RawMedia,
+  type RawMediaDetail,
   type Season,
+  type StaffEdgeRaw,
 } from "./anilist";
-import type { AnimeItem, ScheduleItem, StatItem } from "./types";
+import type {
+  AnimeItem,
+  CharacterPreview,
+  MediaDetail,
+  ScheduleItem,
+  StatItem,
+  StaffPreview,
+} from "./types";
 
 export async function getTopAnime(perPage = 20): Promise<AnimeItem[]> {
   const data = await anilistFetch<{ Page: { media: RawMedia[] } }>(
@@ -22,6 +36,102 @@ export async function getTopAnime(perPage = 20): Promise<AnimeItem[]> {
     }`,
   );
   return data.Page.media.map(mapMedia);
+}
+
+export async function getMedia(id: number): Promise<MediaDetail | null> {
+  const data = await anilistFetch<{ Media: RawMediaDetail | null }>(
+    `query MediaDetail($id: Int) {
+      Media(id: $id) {
+        ${MEDIA_DETAIL_FIELDS}
+      }
+    }`,
+    { id },
+  );
+  if (!data.Media) return null;
+  return mapMediaDetail(data.Media);
+}
+
+export async function getMediaCharacters(
+  id: number,
+  perPage = 25,
+): Promise<CharacterPreview[]> {
+  const MAX_PAGES = 20;
+  const collected: CharacterEdgeRaw[] = [];
+  let page = 1;
+  let hasNext = true;
+
+  while (hasNext && page <= MAX_PAGES) {
+    const data = await anilistFetch<{
+      Media: {
+        characters: {
+          pageInfo: { hasNextPage: boolean };
+          edges: CharacterEdgeRaw[];
+        } | null;
+      } | null;
+    }>(
+      `query MediaCharacters($id: Int, $page: Int) {
+        Media(id: $id) {
+          characters(page: $page, perPage: ${perPage}, sort: [FAVOURITES_DESC]) {
+            pageInfo { hasNextPage }
+            edges {
+              role
+              voiceActors(language: JAPANESE) { id name { full } language image { large } }
+              node { id name { full } image { large } }
+            }
+          }
+        }
+      }`,
+      { id, page },
+    );
+    const conn = data.Media?.characters;
+    if (!conn) break;
+    collected.push(...(conn.edges ?? []));
+    hasNext = conn.pageInfo.hasNextPage;
+    page += 1;
+  }
+
+  return mapCharacterConnection({ edges: collected });
+}
+
+export async function getMediaStaff(
+  id: number,
+  perPage = 25,
+): Promise<StaffPreview[]> {
+  const MAX_PAGES = 20;
+  const collected: StaffEdgeRaw[] = [];
+  let page = 1;
+  let hasNext = true;
+
+  while (hasNext && page <= MAX_PAGES) {
+    const data = await anilistFetch<{
+      Media: {
+        staff: {
+          pageInfo: { hasNextPage: boolean };
+          edges: StaffEdgeRaw[];
+        } | null;
+      } | null;
+    }>(
+      `query MediaStaff($id: Int, $page: Int) {
+        Media(id: $id) {
+          staff(page: $page, perPage: ${perPage}, sort: [ROLE]) {
+            pageInfo { hasNextPage }
+            edges {
+              role
+              node { id name { full } image { large } }
+            }
+          }
+        }
+      }`,
+      { id, page },
+    );
+    const conn = data.Media?.staff;
+    if (!conn) break;
+    collected.push(...(conn.edges ?? []));
+    hasNext = conn.pageInfo.hasNextPage;
+    page += 1;
+  }
+
+  return mapStaffConnection({ edges: collected });
 }
 
 export type MediaSortOption = "SCORE_DESC" | "POPULARITY_DESC";
