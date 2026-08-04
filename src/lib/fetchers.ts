@@ -6,16 +6,19 @@ import {
   mapMedia,
   mapMediaDetail,
   mapManga,
+  mapSearchMedia,
   mapStaffConnection,
   MEDIA_DETAIL_FIELDS,
   MEDIA_FIELDS,
   MANGA_FIELDS,
+  SEARCH_FIELDS,
   pickTitle,
   type CharacterEdgeRaw,
   type RawAiringSchedule,
   type RawMedia,
   type RawMediaDetail,
   type RawManga,
+  type RawSearchMedia,
   type Season,
   type StaffEdgeRaw,
 } from "./anilist";
@@ -26,6 +29,7 @@ import type {
   MediaDetail,
   MangaItem,
   ScheduleItem,
+  SearchResultItem,
   StatItem,
   StaffPreview,
 } from "./types";
@@ -428,6 +432,40 @@ export async function getTrendingSearches(perPage = 6): Promise<string[]> {
     }`,
   );
   return data.Page.media.map((m) => pickTitle(m.title));
+}
+
+export async function searchMedia(
+  query: string,
+  perPage = 8,
+): Promise<SearchResultItem[]> {
+  const data = await anilistFetch<{ Page: { media: RawSearchMedia[] } }>(
+    `query Search($search: String, $perPage: Int) {
+      Page(page: 1, perPage: $perPage) {
+        media(search: $search, sort: POPULARITY_DESC, isAdult: false) {
+          ${SEARCH_FIELDS}
+        }
+      }
+    }`,
+    { search: query, perPage },
+  );
+  return data.Page.media.map(mapSearchMedia);
+}
+
+export type SearchPageResults = {
+  query: string;
+  anime: AnimeItem[];
+  manga: MangaItem[];
+};
+
+export async function searchAll(
+  query: string,
+  perPage = 12,
+): Promise<SearchPageResults> {
+  const [animePage, mangaPage] = await Promise.all([
+    getAnimePage({ search: query, perPage, sort: "POPULARITY_DESC" }),
+    getMangaPage({ search: query, perPage, sort: "POPULARITY_DESC" }),
+  ]);
+  return { query, anime: animePage.anime, manga: mangaPage.manga };
 }
 
 export async function getAiringSchedule(

@@ -94,6 +94,17 @@ export type RelationPreview = {
   year: number | null;
 };
 
+export type SearchResultItem = {
+  id: number;
+  type: MediaType;
+  title: string;
+  cover: string;
+  color: string;
+  year: number | null;
+  format: string;
+  score: number;
+};
+
 export type MediaDetail = {
   id: number;
   type: MediaType;

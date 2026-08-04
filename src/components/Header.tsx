@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ThemeToggle from "@/components/ThemeToggle";
+import SearchBox from "@/components/SearchBox";
 
 const navLinks = [
   { label: "Top Anime", href: "/top-anime" },
@@ -13,7 +14,6 @@ const navLinks = [
 
 export default function Header() {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
 
   return (
     <motion.header
@@ -48,28 +48,7 @@ export default function Header() {
         </nav>
 
         <div className="hidden flex-1 max-w-xs lg:block">
-          <div className="relative">
-            <svg
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-4.35-4.35M11 19a8 8 0 110-16 8 8 0 010 16z"
-              />
-            </svg>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search anime..."
-              className="w-full rounded-full border border-border bg-surface py-2 pl-9 pr-4 text-sm text-foreground placeholder:text-subtle outline-none transition focus:border-accent focus:bg-surface"
-            />
-          </div>
+          <SearchBox variant="header" />
         </div>
 
         <div className="flex items-center gap-3">

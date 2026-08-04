@@ -1,4 +1,4 @@
-import type { AnimeItem, AnimeStatus, CharacterPreview, MangaItem, MangaStatus, MediaDetail, MediaType, RelationPreview, ScheduleItem, StaffPreview } from "./types";
+import type { AnimeItem, AnimeStatus, CharacterPreview, MangaItem, MangaStatus, MediaDetail, MediaType, RelationPreview, ScheduleItem, SearchResultItem, StaffPreview } from "./types";
 
 const ANILIST_ENDPOINT = "https://graphql.anilist.co";
 
@@ -200,6 +200,39 @@ export function mapMedia(m: RawMedia): AnimeItem {
     studio: m.studios?.nodes?.[0]?.name ?? "Unknown",
     synopsis: stripHtml(m.description),
     color: m.coverImage?.color ?? "#d24a2c",
+  };
+}
+
+export const SEARCH_FIELDS = `
+  id
+  type
+  title { english romaji native }
+  coverImage { large color }
+  averageScore
+  format
+  startDate { year }
+`;
+
+export type RawSearchMedia = {
+  id: number;
+  type: "ANIME" | "MANGA" | null;
+  title: { english: string | null; romaji: string | null; native: string | null };
+  coverImage: { large: string | null; color: string | null } | null;
+  averageScore: number | null;
+  format: string | null;
+  startDate: { year: number | null } | null;
+};
+
+export function mapSearchMedia(m: RawSearchMedia): SearchResultItem {
+  return {
+    id: m.id,
+    type: (m.type ?? "ANIME") as MediaType,
+    title: pickTitle(m.title),
+    cover: m.coverImage?.large ?? "",
+    color: m.coverImage?.color ?? "#d24a2c",
+    year: m.startDate?.year ?? null,
+    format: m.format ?? "",
+    score: m.averageScore ? m.averageScore / 10 : 0,
   };
 }
 

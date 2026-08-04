@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { StatItem } from "@/lib/types";
+import SearchBox from "@/components/SearchBox";
 
 export default function SearchHero({
   trending,
@@ -47,23 +48,7 @@ export default function SearchHero({
           className="mx-auto mt-8 max-w-xl"
         >
           <div className="relative">
-            <svg
-              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-subtle"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 110-16 8 8 0 010 16z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search anime, characters, studios, genres..."
-              className="w-full rounded-xl border border-border bg-surface py-4 pl-12 pr-32 text-sm text-foreground placeholder:text-subtle outline-none transition focus:border-accent focus:bg-surface"
-            />
-            <button className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-gradient-to-r from-brand-1 to-brand-2 px-4 py-2 text-sm font-semibold text-white">
-              Search
-            </button>
+            <SearchBox variant="hero" />
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
