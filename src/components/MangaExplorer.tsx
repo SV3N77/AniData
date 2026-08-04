@@ -3,10 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import type { AnimeItem } from "@/lib/types";
+import type { MangaItem } from "@/lib/types";
 import type { AnimePageInfo, MediaSortOption } from "@/lib/fetchers";
-import type { Season, SeasonOption } from "@/lib/anilist";
-import { buildAnimeSlug } from "@/lib/slug";
+import { buildMangaSlug } from "@/lib/slug";
 
 const sortTabs: { label: string; value: MediaSortOption }[] = [
   { label: "Most Popular", value: "POPULARITY_DESC" },
@@ -15,24 +14,33 @@ const sortTabs: { label: string; value: MediaSortOption }[] = [
 
 const statusOptions = [
   { value: "All", label: "All statuses" },
-  { value: "RELEASING", label: "Airing" },
+  { value: "RELEASING", label: "Publishing" },
   { value: "FINISHED", label: "Finished" },
   { value: "NOT_YET_RELEASED", label: "Upcoming" },
+  { value: "HIATUS", label: "Hiatus" },
+  { value: "CANCELLED", label: "Cancelled" },
 ];
 
 const formatOptions = [
   { value: "All", label: "All formats" },
-  { value: "TV", label: "TV" },
-  { value: "TV_SHORT", label: "TV Short" },
-  { value: "MOVIE", label: "Movie" },
-  { value: "OVA", label: "OVA" },
-  { value: "ONA", label: "ONA" },
-  { value: "SPECIAL", label: "Special" },
-  { value: "MUSIC", label: "Music" },
+  { value: "MANGA", label: "Manga" },
+  { value: "NOVEL", label: "Novel" },
+  { value: "ONE_SHOT", label: "One Shot" },
+  { value: "DOUJINSHI", label: "Doujinshi" },
 ];
 
-function optionKey(o: { season: Season; year: number }): string {
-  return `${o.season}-${o.year}`;
+function statusBadgeClass(status: MangaItem["status"]): string {
+  switch (status) {
+    case "Publishing":
+      return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
+    case "Upcoming":
+    case "Hiatus":
+      return "bg-amber-500/15 text-amber-700 dark:text-amber-300";
+    case "Cancelled":
+      return "bg-rose-500/15 text-rose-700 dark:text-rose-300";
+    default:
+      return "bg-surface-2 text-muted";
+  }
 }
 
 function FilterGroup({
@@ -52,13 +60,9 @@ function FilterGroup({
   );
 }
 
-export default function SeasonalExplorer({
-  anime,
+export default function MangaExplorer({
+  manga,
   pageInfo,
-  season,
-  year,
-  currentLabel,
-  seasonOptions,
   sort,
   status,
   genre,
@@ -66,12 +70,8 @@ export default function SeasonalExplorer({
   search,
   genres,
 }: {
-  anime: AnimeItem[];
+  manga: MangaItem[];
   pageInfo: AnimePageInfo;
-  season: Season;
-  year: number;
-  currentLabel: string;
-  seasonOptions: SeasonOption[];
   sort: MediaSortOption;
   status: string;
   genre: string;
@@ -83,16 +83,16 @@ export default function SeasonalExplorer({
   const [searchInput, setSearchInput] = useState(search);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const [items, setItems] = useState<AnimeItem[]>(anime);
+  const [items, setItems] = useState<MangaItem[]>(manga);
   const [currentPage, setCurrentPage] = useState<number>(pageInfo.currentPage);
   const [hasMore, setHasMore] = useState<boolean>(pageInfo.hasNextPage);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const filtersKey = `${season}|${year}|${sort}|${status}|${genre}|${format}|${search}`;
+  const filtersKey = `${sort}|${status}|${genre}|${format}|${search}`;
   const lastFiltersKey = useRef(filtersKey);
   if (lastFiltersKey.current !== filtersKey) {
     lastFiltersKey.current = filtersKey;
-    setItems(anime);
+    setItems(manga);
     setCurrentPage(pageInfo.currentPage);
     setHasMore(pageInfo.hasNextPage);
     setLoading(false);
@@ -102,7 +102,6 @@ export default function SeasonalExplorer({
     setSearchInput(search);
   }, [search]);
 
-  // Lock background scroll while the mobile drawer is open.
   useEffect(() => {
     if (!drawerOpen) return;
     const prev = document.body.style.overflow;
@@ -116,8 +115,6 @@ export default function SeasonalExplorer({
     (overrides: Record<string, string | null>) => {
       const params = new URLSearchParams();
       const current: Record<string, string | null> = {
-        season,
-        year: String(year),
         status: status !== "All" ? status : null,
         genre: genre !== "All" ? genre : null,
         format: format !== "All" ? format : null,
@@ -131,9 +128,9 @@ export default function SeasonalExplorer({
         params.set(k, v);
       }
       const qs = params.toString();
-      return qs ? `/seasonal?${qs}` : "/seasonal";
+      return qs ? `/manga?${qs}` : "/manga";
     },
-    [season, year, sort, status, genre, format, search],
+    [sort, status, genre, format, search],
   );
 
   const navigate = useCallback(
@@ -152,16 +149,6 @@ export default function SeasonalExplorer({
     return () => clearTimeout(t);
   }, [searchInput, search, buildUrl, router]);
 
-  const currentIndex = Math.max(
-    0,
-    seasonOptions.findIndex((o) => o.season === season && o.year === year),
-  );
-  const prevSeason = currentIndex > 0 ? seasonOptions[currentIndex - 1] : null;
-  const nextSeason =
-    currentIndex >= 0 && currentIndex < seasonOptions.length - 1
-      ? seasonOptions[currentIndex + 1]
-      : null;
-
   const hasFilters =
     status !== "All" ||
     genre !== "All" ||
@@ -178,10 +165,8 @@ export default function SeasonalExplorer({
 
   function resetFilters() {
     const params = new URLSearchParams();
-    params.set("season", season);
-    params.set("year", String(year));
     const qs = params.toString();
-    router.push(qs ? `/seasonal?${qs}` : "/seasonal");
+    router.push(qs ? `/manga?${qs}` : "/manga");
   }
 
   const loadMore = useCallback(async () => {
@@ -189,8 +174,6 @@ export default function SeasonalExplorer({
     setLoading(true);
     const nextPage = currentPage + 1;
     const params = new URLSearchParams();
-    params.set("season", season);
-    params.set("year", String(year));
     if (sort !== "POPULARITY_DESC") params.set("sort", sort);
     if (status !== "All") params.set("status", status);
     if (genre !== "All") params.set("genre", genre);
@@ -199,22 +182,22 @@ export default function SeasonalExplorer({
     params.set("page", String(nextPage));
 
     try {
-      const res = await fetch(`/api/seasonal?${params.toString()}`);
+      const res = await fetch(`/api/manga?${params.toString()}`);
       if (!res.ok) throw new Error("fetch failed");
       const json = (await res.json()) as {
-        anime: AnimeItem[];
+        manga: MangaItem[];
         pageInfo: AnimePageInfo;
       };
-      setItems((prev) => [...prev, ...json.anime]);
+      setItems((prev) => [...prev, ...json.manga]);
       setCurrentPage(json.pageInfo.currentPage);
       setHasMore(json.pageInfo.hasNextPage);
     } catch (err) {
-      console.error("[seasonal/infinite]", err);
+      console.error("[manga/infinite]", err);
       setHasMore(false);
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, currentPage, season, year, sort, status, genre, format, search]);
+  }, [loading, hasMore, currentPage, sort, status, genre, format, search]);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -274,77 +257,6 @@ export default function SeasonalExplorer({
               {t.label}
             </button>
           ))}
-        </div>
-      </FilterGroup>
-
-      <FilterGroup label="Season">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() =>
-              prevSeason &&
-              navigate({
-                season: prevSeason.season,
-                year: String(prevSeason.year),
-              })
-            }
-            disabled={!prevSeason}
-            aria-label="Previous season"
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-
-          <div className="relative min-w-0 flex-1">
-            <select
-              value={optionKey({ season, year })}
-              onChange={(e) => {
-                const next = seasonOptions.find(
-                  (o) => optionKey(o) === e.target.value,
-                );
-                if (next) {
-                  navigate({
-                    season: next.season,
-                    year: String(next.year),
-                  });
-                }
-              }}
-              className="w-full appearance-none rounded-md border border-border bg-background py-2 pl-3 pr-8 text-xs font-semibold text-foreground outline-none transition focus:border-accent"
-            >
-              {seasonOptions.map((o) => (
-                <option key={optionKey(o)} value={optionKey(o)} className="bg-surface text-foreground">
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <svg
-              className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-
-          <button
-            onClick={() =>
-              nextSeason &&
-              navigate({
-                season: nextSeason.season,
-                year: String(nextSeason.year),
-              })
-            }
-            disabled={!nextSeason}
-            aria-label="Next season"
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
         </div>
       </FilterGroup>
 
@@ -416,24 +328,26 @@ export default function SeasonalExplorer({
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="lg:grid lg:grid-cols-[16rem_1fr] lg:gap-8">
-        {/* Desktop sidebar */}
         <aside className="hidden lg:block">
           <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-2xl border border-border bg-surface p-4">
             {filtersPanel}
           </div>
         </aside>
 
-        {/* Results column */}
         <div className="min-w-0">
           <div className="mb-5 flex items-end justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
                 <span className="h-5 w-1 rounded-full bg-gradient-to-b from-brand-1 to-brand-2" />
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                  {currentLabel}
+                  Browse Manga
                 </h2>
               </div>
-             
+              {total > 0 && (
+                <p className="mt-1 text-sm text-muted">
+                  {total.toLocaleString()} titles in the database
+                </p>
+              )}
             </div>
 
             <button
@@ -456,7 +370,7 @@ export default function SeasonalExplorer({
             <div className="rounded-2xl border border-border bg-surface px-5 py-16 text-center">
               <p className="text-sm font-medium text-foreground">No results</p>
               <p className="mt-1 text-xs text-subtle">
-                Try adjusting your filters or pick another season.
+                Try adjusting your filters or search query.
               </p>
               {hasFilters && (
                 <button
@@ -473,7 +387,7 @@ export default function SeasonalExplorer({
                 {items.map((a, i) => (
                   <motion.a
                     key={a.id}
-                    href={`/anime/${buildAnimeSlug(a.title)}`}
+                    href={`/manga/${buildMangaSlug(a.title)}`}
                     layout
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -494,13 +408,7 @@ export default function SeasonalExplorer({
                     <div className="flex min-w-0 flex-col py-1">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                            a.status === "Airing"
-                              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                              : a.status === "Upcoming"
-                              ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
-                              : "bg-surface-2 text-muted"
-                          }`}
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusBadgeClass(a.status)}`}
                         >
                           {a.status}
                         </span>
@@ -512,7 +420,7 @@ export default function SeasonalExplorer({
                       <h3 className="mt-2 truncate text-sm font-semibold text-foreground group-hover:text-accent-strong">
                         {a.title}
                       </h3>
-                      <p className="mt-0.5 truncate text-xs text-subtle">{a.studio}</p>
+                      <p className="mt-0.5 truncate text-xs text-subtle">{a.author}</p>
 
                       <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted">
                         {a.synopsis}
@@ -524,6 +432,12 @@ export default function SeasonalExplorer({
                             <path d="M9.05 2.93c.3-.92 1.6-.92 1.9 0l1.42 4.36a1 1 0 00.95.69h4.59c.97 0 1.37 1.24.59 1.81l-3.72 2.7a1 1 0 00-.36 1.12l1.42 4.36c.3.92-.75 1.68-1.54 1.12l-3.72-2.7a1 1 0 00-1.17 0l-3.72 2.7c-.79.56-1.84-.2-1.54-1.12l1.42-4.36a1 1 0 00-.36-1.12l-3.72-2.7c-.78-.57-.38-1.81.59-1.81h4.59a1 1 0 00.95-.69L9.05 2.93z" />
                           </svg>
                           <span className="font-semibold text-muted">{a.score}</span>
+                        </span>
+                        <span>
+                          {a.volumes != null && <>Vol {a.volumes}</>}
+                          {a.volumes != null && a.chapters != null && " · "}
+                          {a.chapters != null && <>Ch {a.chapters}</>}
+                          {a.volumes == null && a.chapters == null && a.year}
                         </span>
                         <span className="ml-auto truncate">{a.genres[0]}</span>
                       </div>
@@ -556,7 +470,6 @@ export default function SeasonalExplorer({
         </div>
       </div>
 
-      {/* Mobile filter drawer */}
       <AnimatePresence>
         {drawerOpen && (
           <>

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MediaDetailLayout from "@/components/MediaDetailLayout";
-import { getMediaBySlug, getMediaCharacters, getMediaStaff } from "@/lib/fetchers";
+import { getMangaBySlug, getMediaCharacters, getMediaStaff } from "@/lib/fetchers";
 
 export const revalidate = 3600;
 
@@ -14,7 +14,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   try {
-    const media = await getMediaBySlug(slug);
+    const media = await getMangaBySlug(slug);
     if (!media) return { title: "Not found — AniData" };
     return {
       title: `${media.title} — AniData`,
@@ -25,16 +25,16 @@ export async function generateMetadata({
   }
 }
 
-export default async function MediaPage({
+export default async function MangaDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
 
-  let media: Awaited<ReturnType<typeof getMediaBySlug>> = null;
+  let media: Awaited<ReturnType<typeof getMangaBySlug>> = null;
   try {
-    media = await getMediaBySlug(slug);
+    media = await getMangaBySlug(slug);
   } catch (err) {
     console.error("[anilist]", err);
   }

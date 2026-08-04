@@ -154,7 +154,7 @@ export default function ScheduleSection({
           selected.items.map((s, i) => (
             <motion.a
               key={s.id}
-              href={`/anime/${buildAnimeSlug(s.mediaId, s.title)}`}
+              href={`/anime/${buildAnimeSlug(s.title)}`}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: (i % 10) * 0.03 }}

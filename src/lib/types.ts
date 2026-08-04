@@ -1,5 +1,7 @@
 export type AnimeStatus = "Airing" | "Finished" | "Upcoming";
 
+export type MangaStatus = "Publishing" | "Finished" | "Upcoming" | "Hiatus" | "Cancelled";
+
 export type AnimeItem = {
   id: number;
   title: string;
@@ -14,6 +16,25 @@ export type AnimeItem = {
   source: string;
   genres: string[];
   studio: string;
+  synopsis: string;
+  color: string;
+};
+
+export type MangaItem = {
+  id: number;
+  title: string;
+  cover: string;
+  score: number;
+  popularity: number;
+  members: string;
+  year: number | null;
+  volumes: number | null;
+  chapters: number | null;
+  status: MangaStatus;
+  format: string;
+  source: string;
+  genres: string[];
+  author: string;
   synopsis: string;
   color: string;
 };

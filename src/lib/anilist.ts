@@ -1,4 +1,4 @@
-import type { AnimeItem, AnimeStatus, CharacterPreview, MediaDetail, MediaType, RelationPreview, ScheduleItem, StaffPreview } from "./types";
+import type { AnimeItem, AnimeStatus, CharacterPreview, MangaItem, MangaStatus, MediaDetail, MediaType, RelationPreview, ScheduleItem, StaffPreview } from "./types";
 
 const ANILIST_ENDPOINT = "https://graphql.anilist.co";
 
@@ -154,6 +154,77 @@ export function mapMedia(m: RawMedia): AnimeItem {
     source: m.source ?? "Original",
     genres: m.genres ?? [],
     studio: m.studios?.nodes?.[0]?.name ?? "Unknown",
+    synopsis: stripHtml(m.description),
+    color: m.coverImage?.color ?? "#d24a2c",
+  };
+}
+
+export const MANGA_FIELDS = `
+  id
+  title { english romaji native }
+  coverImage { large color }
+  averageScore
+  popularity
+  chapters
+  volumes
+  status
+  format
+  source
+  genres
+  startDate { year }
+  staff(sort: ROLE) { edges { node { name { full } } } }
+  description
+`;
+
+export type RawManga = {
+  id: number;
+  title: { english: string | null; romaji: string | null; native: string | null };
+  coverImage: { large: string | null; color: string | null } | null;
+  averageScore: number | null;
+  popularity: number | null;
+  chapters: number | null;
+  volumes: number | null;
+  status: string | null;
+  format: string | null;
+  source: string | null;
+  genres: string[] | null;
+  startDate: { year: number | null } | null;
+  staff: { edges: { node: { name: { full: string | null } | null } | null }[] | null } | null;
+  description: string | null;
+};
+
+function mapMangaStatus(status: string | null): MangaStatus {
+  switch (status) {
+    case "RELEASING":
+      return "Publishing";
+    case "NOT_YET_RELEASED":
+      return "Upcoming";
+    case "HIATUS":
+      return "Hiatus";
+    case "CANCELLED":
+      return "Cancelled";
+    case "FINISHED":
+    default:
+      return "Finished";
+  }
+}
+
+export function mapManga(m: RawManga): MangaItem {
+  return {
+    id: m.id,
+    title: pickTitle(m.title),
+    cover: m.coverImage?.large ?? "",
+    score: m.averageScore ? m.averageScore / 10 : 0,
+    popularity: m.popularity ?? 0,
+    members: formatCount(m.popularity ?? 0),
+    year: m.startDate?.year ?? null,
+    volumes: m.volumes ?? null,
+    chapters: m.chapters ?? null,
+    status: mapMangaStatus(m.status),
+    format: m.format ?? "MANGA",
+    source: m.source ?? "Original",
+    genres: m.genres ?? [],
+    author: m.staff?.edges?.[0]?.node?.name?.full ?? "Unknown",
     synopsis: stripHtml(m.description),
     color: m.coverImage?.color ?? "#d24a2c",
   };

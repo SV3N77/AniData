@@ -8,12 +8,10 @@ export function slugify(text: string): string {
     .slice(0, 60);
 }
 
-export function buildAnimeSlug(id: number, title: string): string {
-  const s = slugify(title);
-  return s ? `${id}-${s}` : `${id}`;
+export function buildAnimeSlug(title: string): string {
+  return slugify(title);
 }
 
-export function parseAnimeId(slug: string): number {
-  const m = /^(\d+)/.exec(slug);
-  return m ? parseInt(m[1], 10) : NaN;
+export function buildMangaSlug(title: string): string {
+  return slugify(title);
 }

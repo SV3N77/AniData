@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import type { AnimeItem } from "@/lib/types";
+import type { MangaItem } from "@/lib/types";
 import type { AnimePageInfo, MediaSortOption } from "@/lib/fetchers";
-import { buildAnimeSlug } from "@/lib/slug";
+import { buildMangaSlug } from "@/lib/slug";
 
 const ANILIST_MAX_ENTRIES = 5000;
 
@@ -16,21 +16,34 @@ const sortTabs: { label: string; value: MediaSortOption }[] = [
 
 const statusOptions = [
   { value: "All", label: "All statuses" },
-  { value: "RELEASING", label: "Airing" },
+  { value: "RELEASING", label: "Publishing" },
   { value: "FINISHED", label: "Finished" },
   { value: "NOT_YET_RELEASED", label: "Upcoming" },
+  { value: "HIATUS", label: "Hiatus" },
+  { value: "CANCELLED", label: "Cancelled" },
 ];
 
 const formatOptions = [
-  "All",
-  "TV",
-  "TV_SHORT",
-  "MOVIE",
-  "OVA",
-  "ONA",
-  "SPECIAL",
-  "MUSIC",
+  { value: "All", label: "All formats" },
+  { value: "MANGA", label: "Manga" },
+  { value: "NOVEL", label: "Novel" },
+  { value: "ONE_SHOT", label: "One Shot" },
+  { value: "DOUJINSHI", label: "Doujinshi" },
 ];
+
+function statusBadgeClass(status: MangaItem["status"]): string {
+  switch (status) {
+    case "Publishing":
+      return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
+    case "Upcoming":
+    case "Hiatus":
+      return "bg-amber-500/15 text-amber-700 dark:text-amber-300";
+    case "Cancelled":
+      return "bg-rose-500/15 text-rose-700 dark:text-rose-300";
+    default:
+      return "bg-surface-2 text-muted";
+  }
+}
 
 function getPageList(
   current: number,
@@ -48,8 +61,8 @@ function getPageList(
   return [1, "ellipsis", current - 1, current, current + 1, "ellipsis", total];
 }
 
-export default function TopAnimeExplorer({
-  anime,
+export default function TopMangaExplorer({
+  manga,
   pageInfo,
   sort,
   status,
@@ -58,7 +71,7 @@ export default function TopAnimeExplorer({
   search,
   genres,
 }: {
-  anime: AnimeItem[];
+  manga: MangaItem[];
   pageInfo: AnimePageInfo;
   sort: MediaSortOption;
   status: string;
@@ -92,7 +105,7 @@ export default function TopAnimeExplorer({
         params.set(k, v);
       }
       const qs = params.toString();
-      return qs ? `/top-anime?${qs}` : "/top-anime";
+      return qs ? `/top-manga?${qs}` : "/top-manga";
     },
     [sort, status, genre, format, search],
   );
@@ -112,7 +125,7 @@ export default function TopAnimeExplorer({
   const lastPage = pageInfo.hasNextPage
     ? totalPages
     : Math.min(totalPages, Math.max(1, currentPage));
-  const rangeStart = anime.length === 0 ? 0 : (currentPage - 1) * perPage + 1;
+  const rangeStart = manga.length === 0 ? 0 : (currentPage - 1) * perPage + 1;
   const cappedTotal = Math.min(total, maxPage * perPage);
   const rangeEnd = Math.min(currentPage * perPage, cappedTotal);
 
@@ -126,7 +139,7 @@ export default function TopAnimeExplorer({
     const params = new URLSearchParams();
     if (sort !== "SCORE_DESC") params.set("sort", sort);
     const qs = params.toString();
-    router.push(qs ? `/top-anime?${qs}` : "/top-anime");
+    router.push(qs ? `/top-manga?${qs}` : "/top-manga");
   }
 
   function goToPage(p: number) {
@@ -142,7 +155,7 @@ export default function TopAnimeExplorer({
           <div className="flex items-center gap-2">
             <span className="h-5 w-1 rounded-full bg-gradient-to-b from-brand-1 to-brand-2" />
             <h2 className="text-2xl font-bold tracking-tight text-foreground">
-              Top Anime
+              Top Manga
             </h2>
           </div>
           <p className="mt-1 text-sm text-muted">
@@ -226,8 +239,8 @@ export default function TopAnimeExplorer({
             className="rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-muted outline-none transition focus:border-accent"
           >
             {formatOptions.map((f) => (
-              <option key={f} value={f} className="bg-surface text-foreground">
-                {f === "All" ? "All formats" : f}
+              <option key={f.value} value={f.value} className="bg-surface text-foreground">
+                {f.label}
               </option>
             ))}
           </select>
@@ -263,15 +276,16 @@ export default function TopAnimeExplorer({
         ref={tableRef}
         className="overflow-hidden rounded-2xl border border-border bg-surface"
       >
-        <div className="hidden grid-cols-[3rem_1fr_5rem_5rem_6rem] gap-4 border-b border-border px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-subtle md:grid">
+        <div className="hidden grid-cols-[3rem_1fr_5rem_5rem_4rem_4rem] gap-4 border-b border-border px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-subtle md:grid">
           <div>Rank</div>
           <div>Title</div>
           <div className="text-right">Score</div>
           <div className="text-right">Type</div>
-          <div className="text-right">Eps</div>
+          <div className="text-right">Vol</div>
+          <div className="text-right">Ch</div>
         </div>
 
-        {anime.length === 0 ? (
+        {manga.length === 0 ? (
           <div className="px-5 py-16 text-center">
             <p className="text-sm font-medium text-foreground">No results</p>
             <p className="mt-1 text-xs text-subtle">
@@ -288,18 +302,18 @@ export default function TopAnimeExplorer({
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
-            {anime.map((a, i) => {
+            {manga.map((a, i) => {
               const rank = (currentPage - 1) * perPage + i;
               return (
                 <motion.a
                   key={a.id}
-                  href={`/anime/${buildAnimeSlug(a.title)}`}
+                  href={`/manga/${buildMangaSlug(a.title)}`}
                   layout
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.25, delay: Math.min(i * 0.02, 0.3) }}
-                  className="group grid grid-cols-[2rem_1fr_auto] items-center gap-3 border-b border-border px-4 py-3 transition-colors hover:bg-surface-hover md:grid-cols-[3rem_1fr_5rem_5rem_6rem] md:gap-4 md:px-5"
+                  className="group grid grid-cols-[2rem_1fr_auto] items-center gap-3 border-b border-border px-4 py-3 transition-colors hover:bg-surface-hover md:grid-cols-[3rem_1fr_5rem_5rem_4rem_4rem] md:gap-4 md:px-5"
                 >
                   <div className="flex items-center justify-center">
                     <span
@@ -327,19 +341,13 @@ export default function TopAnimeExplorer({
                           {a.title}
                         </h3>
                         <span
-                          className={`hidden flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium sm:inline ${
-                            a.status === "Airing"
-                              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                              : a.status === "Upcoming"
-                              ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
-                              : "bg-surface-2 text-muted"
-                          }`}
+                          className={`hidden flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium sm:inline ${statusBadgeClass(a.status)}`}
                         >
                           {a.status}
                         </span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-subtle">
-                        <span>{a.studio}</span>
+                        <span>{a.author}</span>
                         <span className="hidden sm:inline">·</span>
                         <span className="hidden sm:inline">{a.year}</span>
                         <span className="hidden md:inline">·</span>
@@ -370,7 +378,11 @@ export default function TopAnimeExplorer({
                   </div>
 
                   <div className="hidden text-right text-sm tabular-nums text-muted md:block">
-                    {a.episodes ?? "—"}
+                    {a.volumes ?? "—"}
+                  </div>
+
+                  <div className="hidden text-right text-sm tabular-nums text-muted md:block">
+                    {a.chapters ?? "—"}
                   </div>
 
                   <div className="flex items-center justify-end md:hidden">

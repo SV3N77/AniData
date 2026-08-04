@@ -66,7 +66,7 @@ export default function RankedTable({ anime }: { anime: AnimeItem[] }) {
           {sorted.map((a, i) => (
             <motion.a
               key={a.id}
-              href={`/anime/${buildAnimeSlug(a.id, a.title)}`}
+              href={`/anime/${buildAnimeSlug(a.title)}`}
               layout
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { CharacterPreview, RelationPreview, StaffPreview } from "@/lib/types";
-import { buildAnimeSlug } from "@/lib/slug";
+import { buildAnimeSlug, buildMangaSlug } from "@/lib/slug";
 
 type Tab = "Overview" | "Characters" | "Staff";
 
@@ -209,7 +209,7 @@ export default function MediaTabs({
                     {relations.map((r) => (
                       <a
                         key={`${r.type}-${r.id}`}
-                        href={`/anime/${buildAnimeSlug(r.id, r.title)}`}
+                        href={`/${r.type === "MANGA" ? "manga" : "anime"}/${r.type === "MANGA" ? buildMangaSlug(r.title) : buildAnimeSlug(r.title)}`}
                         className="group flex items-center gap-3 overflow-hidden rounded-lg border border-border bg-surface p-2 transition-colors hover:border-accent hover:bg-surface-hover"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}

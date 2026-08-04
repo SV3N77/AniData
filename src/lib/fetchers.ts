@@ -5,21 +5,26 @@ import {
   mapCharacterConnection,
   mapMedia,
   mapMediaDetail,
+  mapManga,
   mapStaffConnection,
   MEDIA_DETAIL_FIELDS,
   MEDIA_FIELDS,
+  MANGA_FIELDS,
   pickTitle,
   type CharacterEdgeRaw,
   type RawAiringSchedule,
   type RawMedia,
   type RawMediaDetail,
+  type RawManga,
   type Season,
   type StaffEdgeRaw,
 } from "./anilist";
+import { slugify } from "./slug";
 import type {
   AnimeItem,
   CharacterPreview,
   MediaDetail,
+  MangaItem,
   ScheduleItem,
   StatItem,
   StaffPreview,
@@ -49,6 +54,44 @@ export async function getMedia(id: number): Promise<MediaDetail | null> {
   );
   if (!data.Media) return null;
   return mapMediaDetail(data.Media);
+}
+
+export async function getMediaBySlug(slug: string): Promise<MediaDetail | null> {
+  const search = slug.replace(/-/g, " ").trim();
+  if (!search) return null;
+  const data = await anilistFetch<{ Page: { media: RawMediaDetail[] } }>(
+    `query MediaBySlug($search: String) {
+      Page(page: 1, perPage: 10) {
+        media(search: $search, isAdult: false) {
+          ${MEDIA_DETAIL_FIELDS}
+        }
+      }
+    }`,
+    { search },
+  );
+  const items = data.Page.media;
+  if (!items.length) return null;
+  const exact = items.find((m) => slugify(pickTitle(m.title)) === slug);
+  return mapMediaDetail(exact ?? items[0]!);
+}
+
+export async function getMangaBySlug(slug: string): Promise<MediaDetail | null> {
+  const search = slug.replace(/-/g, " ").trim();
+  if (!search) return null;
+  const data = await anilistFetch<{ Page: { media: RawMediaDetail[] } }>(
+    `query MangaBySlug($search: String) {
+      Page(page: 1, perPage: 10) {
+        media(search: $search, type: MANGA, isAdult: false) {
+          ${MEDIA_DETAIL_FIELDS}
+        }
+      }
+    }`,
+    { search },
+  );
+  const items = data.Page.media;
+  if (!items.length) return null;
+  const exact = items.find((m) => slugify(pickTitle(m.title)) === slug);
+  return mapMediaDetail(exact ?? items[0]!);
 }
 
 export async function getMediaCharacters(
@@ -223,6 +266,83 @@ export async function getGenres(): Promise<string[]> {
     `query Genres { GenreCollection }`,
   );
   return data.GenreCollection ?? [];
+}
+
+export async function getTopManga(perPage = 20): Promise<MangaItem[]> {
+  const data = await anilistFetch<{ Page: { media: RawManga[] } }>(
+    `query TopManga {
+      Page(page: 1, perPage: ${perPage}) {
+        media(type: MANGA, sort: SCORE_DESC, isAdult: false) {
+          ${MANGA_FIELDS}
+        }
+      }
+    }`,
+  );
+  return data.Page.media.map(mapManga);
+}
+
+export type MangaPage = {
+  manga: MangaItem[];
+  pageInfo: AnimePageInfo;
+};
+
+export async function getMangaPage(
+  params: AnimePageParams,
+): Promise<MangaPage> {
+  const page = Math.max(1, params.page ?? 1);
+  const perPage = Math.max(1, params.perPage ?? 50);
+  const sort: MediaSortOption = params.sort ?? "SCORE_DESC";
+
+  const variables: Record<string, unknown> = {
+    page,
+    perPage,
+    sort: [sort],
+  };
+  if (params.status) variables.status = params.status;
+  if (params.format) variables.format = params.format;
+  if (params.genre) variables.genre = params.genre;
+  if (params.search?.trim()) variables.search = params.search.trim();
+
+  const data = await anilistFetch<{
+    Page: { pageInfo: AnimePageInfo; media: RawManga[] };
+  }>(
+    `query MangaPage(
+      $page: Int
+      $perPage: Int
+      $sort: [MediaSort]
+      $status: MediaStatus
+      $format: MediaFormat
+      $genre: String
+      $search: String
+    ) {
+      Page(page: $page, perPage: $perPage) {
+        pageInfo {
+          currentPage
+          hasNextPage
+          lastPage
+          total
+          perPage
+        }
+        media(
+          type: MANGA
+          sort: $sort
+          status: $status
+          format: $format
+          genre: $genre
+          search: $search
+          isAdult: false
+        ) {
+          ${MANGA_FIELDS}
+        }
+      }
+    }`,
+    variables,
+  );
+
+  return {
+    manga: data.Page.media.map(mapManga),
+    pageInfo: data.Page.pageInfo,
+  };
 }
 
 export type SeasonalPageParams = AnimePageParams & {
