@@ -5,7 +5,7 @@ const footerLinks = [
   },
   {
     title: "Discover",
-    links: ["Top Anime", "Seasonal", "Upcoming", "Reviews", "Recommendations"],
+    links: ["Top Anime", "Seasonal Anime", "Upcoming", "Reviews", "Recommendations"],
   },
   {
     title: "Community",

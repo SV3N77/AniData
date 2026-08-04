@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import SeasonalExplorer from "@/components/SeasonalExplorer";
+import SeasonalAnimeExplorer from "@/components/SeasonalAnimeExplorer";
 import {
-  getSeasonalPage,
+  getSeasonalAnimePage,
   getGenres,
   type MediaSortOption,
 } from "@/lib/fetchers";
@@ -41,7 +41,7 @@ function parseYear(value: string | undefined): number {
   return Number.isFinite(n) && n > 1900 && n < 2100 ? n : fallback;
 }
 
-export default async function SeasonalPage({
+export default async function SeasonalAnimePage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -63,7 +63,7 @@ export default async function SeasonalPage({
   const seasonOptions: SeasonOption[] = getSeasonOptions(12, 4);
 
   const [result, genres] = await Promise.all([
-    getSeasonalPage({
+    getSeasonalAnimePage({
       page,
       perPage: PER_PAGE,
       sort,
@@ -103,7 +103,7 @@ export default async function SeasonalPage({
             <div className="flex items-center gap-2">
               <span className="h-5 w-1 rounded-full bg-gradient-to-b from-brand-1 to-brand-2" />
               <span className="text-xs font-semibold uppercase tracking-wider text-accent">
-                Seasonal
+                Seasonal Anime
               </span>
             </div>
             <h1 className="mt-3 text-3xl font-black tracking-tight text-foreground sm:text-5xl">
@@ -119,7 +119,7 @@ export default async function SeasonalPage({
           </div>
         </section>
 
-        <SeasonalExplorer
+        <SeasonalAnimeExplorer
           anime={anime}
           pageInfo={pageInfo}
           season={season}

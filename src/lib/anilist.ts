@@ -14,36 +14,80 @@ export class AniListError extends Error {
   }
 }
 
+// App-level response cache. Next.js ignores `next.revalidate` in dev, so without
+// this every page load re-hits AniList and blows past the 90 req/min limit (-> 429 -> 404).
+const CACHE_TTL_MS = 60 * 60 * 1000;
+const responseCache = new Map<string, { value: unknown; ts: number }>();
+const inflight = new Map<string, Promise<unknown>>();
+
+async function rawFetch<T>(
+  query: string,
+  variables: Record<string, unknown>,
+): Promise<T> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetch(ANILIST_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "User-Agent": "AniData/0.1",
+      },
+      body: JSON.stringify({ query, variables }),
+      next: { revalidate: 3600 },
+    });
+
+    if (res.status === 429) {
+      // Retry once after backoff before giving up.
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 1500));
+        continue;
+      }
+      throw new AniListError("AniList rate limit exceeded (429)");
+    }
+
+    if (!res.ok) {
+      throw new AniListError(`AniList request failed: ${res.status}`);
+    }
+
+    const json = (await res.json()) as GraphQLResponse<T>;
+
+    if (json.errors?.length) {
+      throw new AniListError(json.errors[0]?.message ?? "GraphQL error");
+    }
+
+    if (!json.data) {
+      throw new AniListError("AniList returned no data");
+    }
+
+    return json.data;
+  }
+  throw new AniListError("AniList request failed");
+}
+
 export async function anilistFetch<T>(
   query: string,
   variables: Record<string, unknown> = {},
 ): Promise<T> {
-  const res = await fetch(ANILIST_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      "User-Agent": "AniData/0.1",
-    },
-    body: JSON.stringify({ query, variables }),
-    next: { revalidate: 3600 },
-  });
+  const key = `${query}::${JSON.stringify(variables)}`;
 
-  if (!res.ok) {
-    throw new AniListError(`AniList request failed: ${res.status}`);
+  const cached = responseCache.get(key);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    return cached.value as T;
   }
 
-  const json = (await res.json()) as GraphQLResponse<T>;
+  const existing = inflight.get(key);
+  if (existing) return existing as Promise<T>;
 
-  if (json.errors?.length) {
-    throw new AniListError(json.errors[0]?.message ?? "GraphQL error");
-  }
-
-  if (!json.data) {
-    throw new AniListError("AniList returned no data");
-  }
-
-  return json.data;
+  const promise = rawFetch<T>(query, variables)
+    .then((data) => {
+      responseCache.set(key, { value: data, ts: Date.now() });
+      return data;
+    })
+    .finally(() => {
+      inflight.delete(key);
+    });
+  inflight.set(key, promise);
+  return promise as Promise<T>;
 }
 
 export const MEDIA_FIELDS = `

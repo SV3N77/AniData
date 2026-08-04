@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { AnimeItem } from "@/lib/types";
 import type { AnimePageInfo, MediaSortOption } from "@/lib/fetchers";
 import type { Season, SeasonOption } from "@/lib/anilist";
-import { buildAnimeSlug } from "@/lib/slug";
+import { buildMediaSlug } from "@/lib/slug";
 
 const sortTabs: { label: string; value: MediaSortOption }[] = [
   { label: "Most Popular", value: "POPULARITY_DESC" },
@@ -52,7 +52,7 @@ function FilterGroup({
   );
 }
 
-export default function SeasonalExplorer({
+export default function SeasonalAnimeExplorer({
   anime,
   pageInfo,
   season,
@@ -131,7 +131,7 @@ export default function SeasonalExplorer({
         params.set(k, v);
       }
       const qs = params.toString();
-      return qs ? `/seasonal?${qs}` : "/seasonal";
+      return qs ? `/seasonal-anime?${qs}` : "/seasonal-anime";
     },
     [season, year, sort, status, genre, format, search],
   );
@@ -181,7 +181,7 @@ export default function SeasonalExplorer({
     params.set("season", season);
     params.set("year", String(year));
     const qs = params.toString();
-    router.push(qs ? `/seasonal?${qs}` : "/seasonal");
+    router.push(qs ? `/seasonal-anime?${qs}` : "/seasonal-anime");
   }
 
   const loadMore = useCallback(async () => {
@@ -199,7 +199,7 @@ export default function SeasonalExplorer({
     params.set("page", String(nextPage));
 
     try {
-      const res = await fetch(`/api/seasonal?${params.toString()}`);
+      const res = await fetch(`/api/seasonal-anime?${params.toString()}`);
       if (!res.ok) throw new Error("fetch failed");
       const json = (await res.json()) as {
         anime: AnimeItem[];
@@ -209,7 +209,7 @@ export default function SeasonalExplorer({
       setCurrentPage(json.pageInfo.currentPage);
       setHasMore(json.pageInfo.hasNextPage);
     } catch (err) {
-      console.error("[seasonal/infinite]", err);
+      console.error("[seasonal-anime/infinite]", err);
       setHasMore(false);
     } finally {
       setLoading(false);
@@ -473,7 +473,7 @@ export default function SeasonalExplorer({
                 {items.map((a, i) => (
                   <motion.a
                     key={a.id}
-                    href={`/anime/${buildAnimeSlug(a.title)}`}
+                    href={`/anime/${buildMediaSlug(a.id, a.title)}`}
                     layout
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}

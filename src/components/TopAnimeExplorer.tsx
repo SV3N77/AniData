@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import type { AnimeItem } from "@/lib/types";
 import type { AnimePageInfo, MediaSortOption } from "@/lib/fetchers";
-import { buildAnimeSlug } from "@/lib/slug";
+import { buildMediaSlug } from "@/lib/slug";
 
 const ANILIST_MAX_ENTRIES = 5000;
 
@@ -293,7 +293,7 @@ export default function TopAnimeExplorer({
               return (
                 <motion.a
                   key={a.id}
-                  href={`/anime/${buildAnimeSlug(a.title)}`}
+                  href={`/anime/${buildMediaSlug(a.id, a.title)}`}
                   layout
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}

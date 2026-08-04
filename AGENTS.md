@@ -32,13 +32,24 @@ AniData/
 ├── public/                  # Static assets
 ├── src/
 │   ├── app/                 # Next.js App Router
+│   │   ├── anime/
+│   │   │   └── [slug]/
+│   │   │       └── page.tsx # Anime detail page
 │   │   ├── api/
-│   │   │   └── seasonal/
-│   │   │       └── route.ts # Seasonal API route
-│   │   ├── seasonal/
-│   │   │   └── page.tsx     # Seasonal explorer page
+│   │   │   ├── manga/
+│   │   │   │   └── route.ts # Manga API route
+│   │   │   └── seasonal-anime/
+│   │   │       └── route.ts # Seasonal anime API route
+│   │   ├── manga/
+│   │   │   ├── [slug]/
+│   │   │   │   └── page.tsx # Manga detail page
+│   │   │   └── page.tsx     # Manga explorer page
+│   │   ├── seasonal-anime/
+│   │   │   └── page.tsx     # Seasonal anime explorer page
 │   │   ├── top-anime/
 │   │   │   └── page.tsx     # Top anime page
+│   │   ├── top-manga/
+│   │   │   └── page.tsx     # Top manga page
 │   │   ├── favicon.ico
 │   │   ├── globals.css      # Global styles (Tailwind import)
 │   │   ├── layout.tsx       # Root layout
@@ -46,17 +57,22 @@ AniData/
 │   ├── components/          # React components
 │   │   ├── Footer.tsx
 │   │   ├── Header.tsx
+│   │   ├── MangaExplorer.tsx
+│   │   ├── MediaDetailLayout.tsx
+│   │   ├── MediaTabs.tsx
 │   │   ├── RankedTable.tsx
 │   │   ├── ScheduleSection.tsx
 │   │   ├── SearchHero.tsx
-│   │   ├── SeasonalExplorer.tsx
-│   │   ├── SeasonalSection.tsx
+│   │   ├── SeasonalAnimeExplorer.tsx
+│   │   ├── SeasonalAnimeSection.tsx
 │   │   ├── ThemeProvider.tsx
 │   │   ├── ThemeToggle.tsx
-│   │   └── TopAnimeExplorer.tsx
+│   │   ├── TopAnimeExplorer.tsx
+│   │   └── TopMangaExplorer.tsx
 │   └── lib/
 │       ├── anilist.ts       # AniList API client
 │       ├── fetchers.ts      # Data fetching helpers
+│       ├── slug.ts          # Slug helpers
 │       └── types.ts         # Shared TypeScript types
 ├── .vscode/
 │   └── settings.json

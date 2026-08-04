@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion";
 import type { AnimeItem } from "@/lib/types";
-import { buildAnimeSlug } from "@/lib/slug";
+import { buildMediaSlug } from "@/lib/slug";
 
-export default function SeasonalSection({
+export default function SeasonalAnimeSection({
   anime,
   seasonLabel,
 }: {
@@ -15,7 +15,7 @@ export default function SeasonalSection({
 
   return (
     <section
-      id="seasonal"
+      id="seasonal-anime"
       className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"
     >
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -32,10 +32,10 @@ export default function SeasonalSection({
         </div>
 
         <a
-          href="/seasonal"
+          href="/seasonal-anime"
           className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:text-accent-strong"
         >
-          Browse all seasonal
+          Browse all seasonal anime
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
@@ -46,7 +46,7 @@ export default function SeasonalSection({
         {anime.map((a, i) => (
           <motion.a
             key={a.id}
-            href={`/anime/${buildAnimeSlug(a.title)}`}
+            href={`/anime/${buildMediaSlug(a.id, a.title)}`}
             layout
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}

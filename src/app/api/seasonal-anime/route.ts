@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSeasonalPage, type MediaSortOption } from "@/lib/fetchers";
+import { getSeasonalAnimePage, type MediaSortOption } from "@/lib/fetchers";
 import { getCurrentSeason, type Season } from "@/lib/anilist";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
   const search = searchParams.get("search");
 
   try {
-    const result = await getSeasonalPage({
+    const result = await getSeasonalAnimePage({
       page,
       perPage: PER_PAGE,
       sort,

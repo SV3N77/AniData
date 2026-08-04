@@ -98,7 +98,7 @@ export async function getMediaCharacters(
   id: number,
   perPage = 25,
 ): Promise<CharacterPreview[]> {
-  const MAX_PAGES = 20;
+  const MAX_PAGES = 1;
   const collected: CharacterEdgeRaw[] = [];
   let page = 1;
   let hasNext = true;
@@ -140,7 +140,7 @@ export async function getMediaStaff(
   id: number,
   perPage = 25,
 ): Promise<StaffPreview[]> {
-  const MAX_PAGES = 20;
+  const MAX_PAGES = 1;
   const collected: StaffEdgeRaw[] = [];
   let page = 1;
   let hasNext = true;
@@ -345,13 +345,13 @@ export async function getMangaPage(
   };
 }
 
-export type SeasonalPageParams = AnimePageParams & {
+export type SeasonalAnimePageParams = AnimePageParams & {
   season: Season;
   year: number;
 };
 
-export async function getSeasonalPage(
-  params: SeasonalPageParams,
+export async function getSeasonalAnimePage(
+  params: SeasonalAnimePageParams,
 ): Promise<AnimePage> {
   const page = Math.max(1, params.page ?? 1);
   const perPage = Math.max(1, params.perPage ?? 24);
@@ -372,7 +372,7 @@ export async function getSeasonalPage(
   const data = await anilistFetch<{
     Page: { pageInfo: AnimePageInfo; media: RawMedia[] };
   }>(
-    `query SeasonalPage(
+    `query SeasonalAnimePage(
       $page: Int
       $perPage: Int
       $sort: [MediaSort]
@@ -523,7 +523,7 @@ export type HomeData = {
   trending: string[];
   stats: StatItem[];
   schedule: ScheduleItem[];
-  seasonal: AnimeItem[];
+  seasonalAnime: AnimeItem[];
   seasonLabel: string;
 };
 
@@ -540,15 +540,15 @@ export async function getHomeData(): Promise<HomeData> {
   const { season, year } = getCurrentSeason();
   const seasonLabel = `${season.charAt(0)}${season.slice(1).toLowerCase()} ${year}`;
 
-  const [topAnime, trending, stats, schedule, seasonal] = await Promise.all([
+  const [topAnime, trending, stats, schedule, seasonalAnime] = await Promise.all([
     safe(getTopAnime(20), [] as AnimeItem[]),
     safe(getTrendingSearches(6), [] as string[]),
     safe(getStats(), [] as StatItem[]),
     safe(getAiringSchedule(), [] as ScheduleItem[]),
     safe(
-      getSeasonalPage({ season, year, perPage: 6 }).then((r) => r.anime),
+      getSeasonalAnimePage({ season, year, perPage: 6 }).then((r) => r.anime),
       [] as AnimeItem[],
     ),
   ]);
-  return { topAnime, trending, stats, schedule, seasonal, seasonLabel };
+  return { topAnime, trending, stats, schedule, seasonalAnime, seasonLabel };
 }

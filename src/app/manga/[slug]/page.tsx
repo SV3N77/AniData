@@ -1,11 +1,34 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MediaDetailLayout from "@/components/MediaDetailLayout";
-import { getMangaBySlug, getMediaCharacters, getMediaStaff } from "@/lib/fetchers";
+import { getMedia, getMangaBySlug, getMediaCharacters, getMediaStaff } from "@/lib/fetchers";
+import { buildMediaSlug, parseMediaSlug } from "@/lib/slug";
+import type { MediaDetail } from "@/lib/types";
 
 export const revalidate = 3600;
+
+async function resolveMedia(
+  slug: string,
+): Promise<{ media: MediaDetail | null; legacy: boolean }> {
+  const id = parseMediaSlug(slug);
+  if (id !== null) {
+    try {
+      return { media: await getMedia(id), legacy: false };
+    } catch (err) {
+      console.error("[anilist]", err);
+      return { media: null, legacy: false };
+    }
+  }
+  // Legacy title-only slug fallback
+  try {
+    return { media: await getMangaBySlug(slug), legacy: true };
+  } catch (err) {
+    console.error("[anilist]", err);
+    return { media: null, legacy: true };
+  }
+}
 
 export async function generateMetadata({
   params,
@@ -13,16 +36,12 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  try {
-    const media = await getMangaBySlug(slug);
-    if (!media) return { title: "Not found — AniData" };
-    return {
-      title: `${media.title} — AniData`,
-      description: media.synopsis.slice(0, 160) || undefined,
-    };
-  } catch {
-    return { title: "Not found — AniData" };
-  }
+  const { media } = await resolveMedia(slug);
+  if (!media) return { title: "Not found — AniData" };
+  return {
+    title: `${media.title} — AniData`,
+    description: media.synopsis.slice(0, 160) || undefined,
+  };
 }
 
 export default async function MangaDetailPage({
@@ -31,14 +50,17 @@ export default async function MangaDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
-  let media: Awaited<ReturnType<typeof getMangaBySlug>> = null;
-  try {
-    media = await getMangaBySlug(slug);
-  } catch (err) {
-    console.error("[anilist]", err);
-  }
+  const { media, legacy } = await resolveMedia(slug);
   if (!media) notFound();
+
+  // Cross-type: an anime id on the manga route -> redirect to anime
+  if (media.type === "ANIME") {
+    redirect(`/anime/${buildMediaSlug(media.id, media.title)}`);
+  }
+  // Canonicalize legacy title-only URLs to the new id-based URL
+  if (legacy) {
+    redirect(`/manga/${buildMediaSlug(media.id, media.title)}`);
+  }
 
   const mediaId = media.id;
 
