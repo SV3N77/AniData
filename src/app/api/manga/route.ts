@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMangaPage, type MediaSortOption } from "@/lib/fetchers";
+import { getMangaPage, parseGenres, type MediaSortOption } from "@/lib/fetchers";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   const sort: MediaSortOption =
     sortParam === "SCORE_DESC" ? "SCORE_DESC" : "POPULARITY_DESC";
   const status = searchParams.get("status");
-  const genre = searchParams.get("genre");
+  const genres = parseGenres(searchParams.getAll("genre"));
   const format = searchParams.get("format");
   const search = searchParams.get("search");
 
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
       perPage: PER_PAGE,
       sort,
       status,
-      genre,
+      genres,
       format,
       search,
     });

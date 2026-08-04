@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MangaExplorer from "@/components/MangaExplorer";
-import { getMangaPage, getGenres, type MediaSortOption } from "@/lib/fetchers";
+import { getMangaPage, getGenres, parseGenres, type MediaSortOption } from "@/lib/fetchers";
 
 export const metadata: Metadata = {
   title: "Browse Manga — AniData",
@@ -30,7 +30,7 @@ export default async function MangaPage({
   const sort: MediaSortOption =
     first(sp.sort) === "SCORE_DESC" ? "SCORE_DESC" : "POPULARITY_DESC";
   const status = first(sp.status) ?? null;
-  const genre = first(sp.genre) ?? null;
+  const selectedGenres = parseGenres(sp.genre);
   const format = first(sp.format) ?? null;
   const search = first(sp.search) ?? null;
 
@@ -40,7 +40,7 @@ export default async function MangaPage({
       perPage: PER_PAGE,
       sort,
       status,
-      genre,
+      genres: selectedGenres.length ? selectedGenres : null,
       format,
       search,
     }).catch((err) => {
@@ -93,7 +93,7 @@ export default async function MangaPage({
           pageInfo={pageInfo}
           sort={sort}
           status={status ?? "All"}
-          genre={genre ?? "All"}
+          selectedGenres={selectedGenres}
           format={format ?? "All"}
           search={search ?? ""}
           genres={genres}

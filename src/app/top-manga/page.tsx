@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import TopMangaExplorer from "@/components/TopMangaExplorer";
-import { getMangaPage, getGenres, type MediaSortOption } from "@/lib/fetchers";
+import { getMangaPage, getGenres, parseGenres, type MediaSortOption } from "@/lib/fetchers";
 
 export const metadata: Metadata = {
   title: "Top Manga — AniData",
@@ -30,12 +30,12 @@ export default async function TopMangaPage({
   const sort: MediaSortOption =
     first(sp.sort) === "POPULARITY_DESC" ? "POPULARITY_DESC" : "SCORE_DESC";
   const status = first(sp.status) ?? null;
-  const genre = first(sp.genre) ?? null;
+  const selectedGenres = parseGenres(sp.genre);
   const format = first(sp.format) ?? null;
   const search = first(sp.search) ?? null;
 
   const [result, genres] = await Promise.all([
-    getMangaPage({ page, perPage: PER_PAGE, sort, status, genre, format, search }).catch(
+    getMangaPage({ page, perPage: PER_PAGE, sort, status, genres: selectedGenres.length ? selectedGenres : null, format, search }).catch(
       (err) => {
         console.error("[anilist]", err);
         return {
@@ -87,7 +87,7 @@ export default async function TopMangaPage({
           pageInfo={pageInfo}
           sort={sort}
           status={status ?? "All"}
-          genre={genre ?? "All"}
+          selectedGenres={selectedGenres}
           format={format ?? "All"}
           search={search ?? ""}
           genres={genres}

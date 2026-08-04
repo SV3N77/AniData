@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MediaDetailLayout from "@/components/MediaDetailLayout";
-import { getMedia, getMediaBySlug, getMediaCharacters, getMediaStaff } from "@/lib/fetchers";
+import { getMedia, getMediaBySlug, getMediaPeople } from "@/lib/fetchers";
 import { buildMediaSlug, parseMediaSlug } from "@/lib/slug";
 import type { MediaDetail } from "@/lib/types";
 
@@ -64,16 +64,12 @@ export default async function MediaPage({
 
   const mediaId = media.id;
 
-  let characters: Awaited<ReturnType<typeof getMediaCharacters>> = [];
+  let people: Awaited<ReturnType<typeof getMediaPeople>> = {
+    characters: [],
+    staff: [],
+  };
   try {
-    characters = await getMediaCharacters(mediaId);
-  } catch (err) {
-    console.error("[anilist]", err);
-  }
-
-  let staff: Awaited<ReturnType<typeof getMediaStaff>> = [];
-  try {
-    staff = await getMediaStaff(mediaId);
+    people = await getMediaPeople(mediaId);
   } catch (err) {
     console.error("[anilist]", err);
   }
@@ -81,7 +77,11 @@ export default async function MediaPage({
   return (
     <>
       <Header />
-      <MediaDetailLayout media={media} characters={characters} staff={staff} />
+      <MediaDetailLayout
+        media={media}
+        characters={people.characters}
+        staff={people.staff}
+      />
       <Footer />
     </>
   );

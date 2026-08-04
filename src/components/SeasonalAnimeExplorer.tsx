@@ -61,7 +61,7 @@ export default function SeasonalAnimeExplorer({
   seasonOptions,
   sort,
   status,
-  genre,
+  selectedGenres,
   format,
   search,
   genres,
@@ -74,7 +74,7 @@ export default function SeasonalAnimeExplorer({
   seasonOptions: SeasonOption[];
   sort: MediaSortOption;
   status: string;
-  genre: string;
+  selectedGenres: string[];
   format: string;
   search: string;
   genres: string[];
@@ -88,7 +88,7 @@ export default function SeasonalAnimeExplorer({
   const [hasMore, setHasMore] = useState<boolean>(pageInfo.hasNextPage);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const filtersKey = `${season}|${year}|${sort}|${status}|${genre}|${format}|${search}`;
+  const filtersKey = `${season}|${year}|${sort}|${status}|${selectedGenres.join(",")}|${format}|${search}`;
   const lastFiltersKey = useRef(filtersKey);
   if (lastFiltersKey.current !== filtersKey) {
     lastFiltersKey.current = filtersKey;
@@ -113,31 +113,35 @@ export default function SeasonalAnimeExplorer({
   }, [drawerOpen]);
 
   const buildUrl = useCallback(
-    (overrides: Record<string, string | null>) => {
+    (overrides: Record<string, string | string[] | null>) => {
       const params = new URLSearchParams();
-      const current: Record<string, string | null> = {
+      const current: Record<string, string | string[] | null> = {
         season,
         year: String(year),
         status: status !== "All" ? status : null,
-        genre: genre !== "All" ? genre : null,
+        genre: selectedGenres.length ? selectedGenres : null,
         format: format !== "All" ? format : null,
         search: search.trim() || null,
       };
       if (sort !== "POPULARITY_DESC") current.sort = sort;
       const merged = { ...current, ...overrides };
       for (const [k, v] of Object.entries(merged)) {
-        if (!v || v === "All") continue;
+        if (v == null || v === "All") continue;
         if (k === "sort" && v === "POPULARITY_DESC") continue;
-        params.set(k, v);
+        if (Array.isArray(v)) {
+          v.forEach((item) => params.append(k, item));
+        } else {
+          params.set(k, v);
+        }
       }
       const qs = params.toString();
       return qs ? `/seasonal-anime?${qs}` : "/seasonal-anime";
     },
-    [season, year, sort, status, genre, format, search],
+    [season, year, sort, status, selectedGenres, format, search],
   );
 
   const navigate = useCallback(
-    (overrides: Record<string, string | null>) => {
+    (overrides: Record<string, string | string[] | null>) => {
       router.push(buildUrl(overrides));
     },
     [router, buildUrl],
@@ -164,17 +168,24 @@ export default function SeasonalAnimeExplorer({
 
   const hasFilters =
     status !== "All" ||
-    genre !== "All" ||
+    selectedGenres.length > 0 ||
     format !== "All" ||
     Boolean(search.trim());
 
   const activeCount = [
     status !== "All",
     format !== "All",
-    genre !== "All",
+    selectedGenres.length > 0,
     Boolean(search.trim()),
     sort !== "POPULARITY_DESC",
   ].filter(Boolean).length;
+
+  function toggleGenre(g: string) {
+    const next = selectedGenres.includes(g)
+      ? selectedGenres.filter((x) => x !== g)
+      : [...selectedGenres, g];
+    navigate({ genre: next.length ? next : null });
+  }
 
   function resetFilters() {
     const params = new URLSearchParams();
@@ -193,7 +204,7 @@ export default function SeasonalAnimeExplorer({
     params.set("year", String(year));
     if (sort !== "POPULARITY_DESC") params.set("sort", sort);
     if (status !== "All") params.set("status", status);
-    if (genre !== "All") params.set("genre", genre);
+    selectedGenres.forEach((g) => params.append("genre", g));
     if (format !== "All") params.set("format", format);
     if (search.trim()) params.set("search", search.trim());
     params.set("page", String(nextPage));
@@ -214,7 +225,7 @@ export default function SeasonalAnimeExplorer({
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, currentPage, season, year, sort, status, genre, format, search]);
+  }, [loading, hasMore, currentPage, season, year, sort, status, selectedGenres, format, search]);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -386,12 +397,22 @@ export default function SeasonalAnimeExplorer({
 
       <FilterGroup label="Genre">
         <div className="flex flex-wrap gap-1.5">
-          {["All", ...genres].map((g) => (
+          <button
+            onClick={() => navigate({ genre: null })}
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+              selectedGenres.length === 0
+                ? "border-accent bg-accent/10 text-accent-strong"
+                : "border-border bg-surface text-muted hover:border-accent hover:text-foreground"
+            }`}
+          >
+            All
+          </button>
+          {genres.map((g) => (
             <button
               key={g}
-              onClick={() => navigate({ genre: g })}
+              onClick={() => toggleGenre(g)}
               className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
-                genre === g
+                selectedGenres.includes(g)
                   ? "border-accent bg-accent/10 text-accent-strong"
                   : "border-border bg-surface text-muted hover:border-accent hover:text-foreground"
               }`}

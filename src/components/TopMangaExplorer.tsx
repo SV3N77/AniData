@@ -66,7 +66,7 @@ export default function TopMangaExplorer({
   pageInfo,
   sort,
   status,
-  genre,
+  selectedGenres,
   format,
   search,
   genres,
@@ -75,7 +75,7 @@ export default function TopMangaExplorer({
   pageInfo: AnimePageInfo;
   sort: MediaSortOption;
   status: string;
-  genre: string;
+  selectedGenres: string[];
   format: string;
   search: string;
   genres: string[];
@@ -89,25 +89,29 @@ export default function TopMangaExplorer({
   }, [search]);
 
   const buildUrl = useCallback(
-    (overrides: Record<string, string | null>) => {
+    (overrides: Record<string, string | string[] | null>) => {
       const params = new URLSearchParams();
-      const current: Record<string, string | null> = {
+      const current: Record<string, string | string[] | null> = {
         status: status && status !== "All" ? status : null,
-        genre: genre !== "All" ? genre : null,
+        genre: selectedGenres.length ? selectedGenres : null,
         format: format !== "All" ? format : null,
         search: search.trim() || null,
       };
       if (sort !== "SCORE_DESC") current.sort = sort;
       const merged = { ...current, ...overrides };
       for (const [k, v] of Object.entries(merged)) {
-        if (!v || v === "All") continue;
+        if (v == null || v === "All") continue;
         if (k === "sort" && v === "SCORE_DESC") continue;
-        params.set(k, v);
+        if (Array.isArray(v)) {
+          v.forEach((item) => params.append(k, item));
+        } else {
+          params.set(k, v);
+        }
       }
       const qs = params.toString();
       return qs ? `/top-manga?${qs}` : "/top-manga";
     },
-    [sort, status, genre, format, search],
+    [sort, status, selectedGenres, format, search],
   );
 
   useEffect(() => {
@@ -131,9 +135,16 @@ export default function TopMangaExplorer({
 
   const hasFilters =
     status !== "All" ||
-    genre !== "All" ||
+    selectedGenres.length > 0 ||
     format !== "All" ||
     Boolean(search.trim());
+
+  function toggleGenre(g: string) {
+    const next = selectedGenres.includes(g)
+      ? selectedGenres.filter((x) => x !== g)
+      : [...selectedGenres, g];
+    router.push(buildUrl({ genre: next.length ? next : null }));
+  }
 
   function resetFilters() {
     const params = new URLSearchParams();
@@ -257,12 +268,22 @@ export default function TopMangaExplorer({
       </div>
 
       <div className="mb-5 flex flex-wrap gap-1.5">
-        {["All", ...genres].map((g) => (
+        <button
+          onClick={() => router.push(buildUrl({ genre: null }))}
+          className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+            selectedGenres.length === 0
+              ? "border-accent bg-accent/10 text-accent-strong"
+              : "border-border bg-surface text-muted hover:border-accent hover:text-foreground"
+          }`}
+        >
+          All
+        </button>
+        {genres.map((g) => (
           <button
             key={g}
-            onClick={() => router.push(buildUrl({ genre: g }))}
+            onClick={() => toggleGenre(g)}
             className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-              genre === g
+              selectedGenres.includes(g)
                 ? "border-accent bg-accent/10 text-accent-strong"
                 : "border-border bg-surface text-muted hover:border-accent hover:text-foreground"
             }`}

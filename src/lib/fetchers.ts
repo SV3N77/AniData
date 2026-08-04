@@ -34,19 +34,6 @@ import type {
   StaffPreview,
 } from "./types";
 
-export async function getTopAnime(perPage = 20): Promise<AnimeItem[]> {
-  const data = await anilistFetch<{ Page: { media: RawMedia[] } }>(
-    `query TopAnime {
-      Page(page: 1, perPage: ${perPage}) {
-        media(type: ANIME, sort: SCORE_DESC, isAdult: false) {
-          ${MEDIA_FIELDS}
-        }
-      }
-    }`,
-  );
-  return data.Page.media.map(mapMedia);
-}
-
 export async function getMedia(id: number): Promise<MediaDetail | null> {
   const data = await anilistFetch<{ Media: RawMediaDetail | null }>(
     `query MediaDetail($id: Int) {
@@ -98,90 +85,58 @@ export async function getMangaBySlug(slug: string): Promise<MediaDetail | null> 
   return mapMediaDetail(exact ?? items[0]!);
 }
 
-export async function getMediaCharacters(
+export async function getMediaPeople(
   id: number,
   perPage = 25,
-): Promise<CharacterPreview[]> {
-  const MAX_PAGES = 1;
-  const collected: CharacterEdgeRaw[] = [];
-  let page = 1;
-  let hasNext = true;
-
-  while (hasNext && page <= MAX_PAGES) {
-    const data = await anilistFetch<{
-      Media: {
-        characters: {
-          pageInfo: { hasNextPage: boolean };
-          edges: CharacterEdgeRaw[];
-        } | null;
-      } | null;
-    }>(
-      `query MediaCharacters($id: Int, $page: Int) {
-        Media(id: $id) {
-          characters(page: $page, perPage: ${perPage}, sort: [FAVOURITES_DESC]) {
-            pageInfo { hasNextPage }
-            edges {
-              role
-              voiceActors(language: JAPANESE) { id name { full } language image { large } }
-              node { id name { full } image { large } }
-            }
+): Promise<{ characters: CharacterPreview[]; staff: StaffPreview[] }> {
+  const data = await anilistFetch<{
+    Media: {
+      characters: { edges: CharacterEdgeRaw[] } | null;
+      staff: { edges: StaffEdgeRaw[] } | null;
+    } | null;
+  }>(
+    `query MediaPeople($id: Int) {
+      Media(id: $id) {
+        characters(page: 1, perPage: ${perPage}, sort: [FAVOURITES_DESC]) {
+          edges {
+            role
+            voiceActors(language: JAPANESE) { id name { full } language image { large } }
+            node { id name { full } image { large } }
           }
         }
-      }`,
-      { id, page },
-    );
-    const conn = data.Media?.characters;
-    if (!conn) break;
-    collected.push(...(conn.edges ?? []));
-    hasNext = conn.pageInfo.hasNextPage;
-    page += 1;
-  }
-
-  return mapCharacterConnection({ edges: collected });
-}
-
-export async function getMediaStaff(
-  id: number,
-  perPage = 25,
-): Promise<StaffPreview[]> {
-  const MAX_PAGES = 1;
-  const collected: StaffEdgeRaw[] = [];
-  let page = 1;
-  let hasNext = true;
-
-  while (hasNext && page <= MAX_PAGES) {
-    const data = await anilistFetch<{
-      Media: {
-        staff: {
-          pageInfo: { hasNextPage: boolean };
-          edges: StaffEdgeRaw[];
-        } | null;
-      } | null;
-    }>(
-      `query MediaStaff($id: Int, $page: Int) {
-        Media(id: $id) {
-          staff(page: $page, perPage: ${perPage}, sort: [ROLE]) {
-            pageInfo { hasNextPage }
-            edges {
-              role
-              node { id name { full } image { large } }
-            }
+        staff(page: 1, perPage: ${perPage}, sort: [ROLE]) {
+          edges {
+            role
+            node { id name { full } image { large } }
           }
         }
-      }`,
-      { id, page },
-    );
-    const conn = data.Media?.staff;
-    if (!conn) break;
-    collected.push(...(conn.edges ?? []));
-    hasNext = conn.pageInfo.hasNextPage;
-    page += 1;
-  }
+      }
+    }`,
+    { id },
+  );
 
-  return mapStaffConnection({ edges: collected });
+  return {
+    characters: mapCharacterConnection(data.Media?.characters ?? null),
+    staff: mapStaffConnection(data.Media?.staff ?? null),
+  };
 }
 
 export type MediaSortOption = "SCORE_DESC" | "POPULARITY_DESC";
+
+export function parseGenres(
+  v: string | string[] | null | undefined,
+): string[] {
+  if (!v) return [];
+  const arr = Array.isArray(v) ? v : [v];
+  return Array.from(
+    new Set(
+      arr
+        .flatMap((s) => s.split(","))
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  );
+}
 
 export type AnimePageParams = {
   page?: number;
@@ -189,7 +144,7 @@ export type AnimePageParams = {
   sort?: MediaSortOption;
   status?: string | null;
   format?: string | null;
-  genre?: string | null;
+  genres?: string[] | null;
   search?: string | null;
 };
 
@@ -220,7 +175,7 @@ export async function getAnimePage(
   };
   if (params.status) variables.status = params.status;
   if (params.format) variables.format = params.format;
-  if (params.genre) variables.genre = params.genre;
+  if (params.genres && params.genres.length) variables.genres = params.genres;
   if (params.search?.trim()) variables.search = params.search.trim();
 
   const data = await anilistFetch<{
@@ -232,7 +187,7 @@ export async function getAnimePage(
       $sort: [MediaSort]
       $status: MediaStatus
       $format: MediaFormat
-      $genre: String
+      $genres: [String]
       $search: String
     ) {
       Page(page: $page, perPage: $perPage) {
@@ -248,7 +203,7 @@ export async function getAnimePage(
           sort: $sort
           status: $status
           format: $format
-          genre: $genre
+          genre_in: $genres
           search: $search
           isAdult: false
         ) {
@@ -269,7 +224,7 @@ export async function getGenres(): Promise<string[]> {
   const data = await anilistFetch<{ GenreCollection: string[] | null }>(
     `query Genres { GenreCollection }`,
   );
-  return data.GenreCollection ?? [];
+  return (data.GenreCollection ?? []).filter((g) => g !== "Hentai");
 }
 
 export async function getTopManga(perPage = 20): Promise<MangaItem[]> {
@@ -304,7 +259,7 @@ export async function getMangaPage(
   };
   if (params.status) variables.status = params.status;
   if (params.format) variables.format = params.format;
-  if (params.genre) variables.genre = params.genre;
+  if (params.genres && params.genres.length) variables.genres = params.genres;
   if (params.search?.trim()) variables.search = params.search.trim();
 
   const data = await anilistFetch<{
@@ -316,7 +271,7 @@ export async function getMangaPage(
       $sort: [MediaSort]
       $status: MediaStatus
       $format: MediaFormat
-      $genre: String
+      $genres: [String]
       $search: String
     ) {
       Page(page: $page, perPage: $perPage) {
@@ -332,7 +287,7 @@ export async function getMangaPage(
           sort: $sort
           status: $status
           format: $format
-          genre: $genre
+          genre_in: $genres
           search: $search
           isAdult: false
         ) {
@@ -370,7 +325,7 @@ export async function getSeasonalAnimePage(
   };
   if (params.status) variables.status = params.status;
   if (params.format) variables.format = params.format;
-  if (params.genre) variables.genre = params.genre;
+  if (params.genres && params.genres.length) variables.genres = params.genres;
   if (params.search?.trim()) variables.search = params.search.trim();
 
   const data = await anilistFetch<{
@@ -384,7 +339,7 @@ export async function getSeasonalAnimePage(
       $seasonYear: Int
       $status: MediaStatus
       $format: MediaFormat
-      $genre: String
+      $genres: [String]
       $search: String
     ) {
       Page(page: $page, perPage: $perPage) {
@@ -402,7 +357,7 @@ export async function getSeasonalAnimePage(
           sort: $sort
           status: $status
           format: $format
-          genre: $genre
+          genre_in: $genres
           search: $search
           isAdult: false
         ) {
@@ -419,19 +374,81 @@ export async function getSeasonalAnimePage(
   };
 }
 
-export async function getTrendingSearches(perPage = 6): Promise<string[]> {
+export async function getHomeBatch(
+  season: Season,
+  year: number,
+): Promise<{
+  topAnime: AnimeItem[];
+  trending: string[];
+  stats: StatItem[];
+  seasonalAnime: AnimeItem[];
+}> {
   const data = await anilistFetch<{
-    Page: { media: { title: RawMedia["title"] }[] };
+    topAnime: { media: RawMedia[] };
+    trending: { media: { title: RawMedia["title"] }[] };
+    seasonal: { media: RawMedia[] };
+    animeCount: { pageInfo: { total: number } };
+    mangaCount: { pageInfo: { total: number } };
+    charactersCount: { pageInfo: { total: number } };
+    studiosCount: { pageInfo: { total: number } };
   }>(
-    `query Trending {
-      Page(page: 1, perPage: ${perPage}) {
+    `query HomePage($season: MediaSeason, $seasonYear: Int) {
+      topAnime: Page(page: 1, perPage: 20) {
+        media(type: ANIME, sort: SCORE_DESC, isAdult: false) {
+          ${MEDIA_FIELDS}
+        }
+      }
+      trending: Page(page: 1, perPage: 6) {
         media(type: ANIME, sort: TRENDING_DESC, isAdult: false) {
           title { english romaji native }
         }
       }
+      seasonal: Page(page: 1, perPage: 6) {
+        media(
+          type: ANIME
+          season: $season
+          seasonYear: $seasonYear
+          sort: POPULARITY_DESC
+          isAdult: false
+        ) {
+          ${MEDIA_FIELDS}
+        }
+      }
+      animeCount: Page(page: 1, perPage: 1) {
+        media(type: ANIME) { id }
+        pageInfo { total }
+      }
+      mangaCount: Page(page: 1, perPage: 1) {
+        media(type: MANGA) { id }
+        pageInfo { total }
+      }
+      charactersCount: Page(page: 1, perPage: 1) {
+        characters { id }
+        pageInfo { total }
+      }
+      studiosCount: Page(page: 1, perPage: 1) {
+        studios { id }
+        pageInfo { total }
+      }
     }`,
+    { season, seasonYear: year },
   );
-  return data.Page.media.map((m) => pickTitle(m.title));
+
+  const fmt = (n: number) => n.toLocaleString("en-US");
+  return {
+    topAnime: data.topAnime.media.map(mapMedia),
+    trending: data.trending.media.map((m) => pickTitle(m.title)),
+    seasonalAnime: data.seasonal.media.map(mapMedia),
+    stats: [
+      { value: fmt(data.animeCount?.pageInfo?.total ?? 0), label: "Anime" },
+      { value: fmt(data.mangaCount?.pageInfo?.total ?? 0), label: "Manga" },
+      {
+        value: fmt(data.charactersCount?.pageInfo?.total ?? 0),
+        label: "Characters",
+      },
+      { value: fmt(data.studiosCount?.pageInfo?.total ?? 0), label: "Studios" },
+    ],
+  };
 }
 
 export async function searchMedia(
@@ -519,43 +536,6 @@ export async function getAiringSchedule(
     .map(mapAiringSchedule);
 }
 
-export async function getStats(): Promise<StatItem[]> {
-  const data = await anilistFetch<{
-    anime: { pageInfo: { total: number } };
-    manga: { pageInfo: { total: number } };
-    characters: { pageInfo: { total: number } };
-    studios: { pageInfo: { total: number } };
-  }>(
-    `query Stats {
-      anime: Page(page: 1, perPage: 1) {
-        media(type: ANIME) { id }
-        pageInfo { total }
-      }
-      manga: Page(page: 1, perPage: 1) {
-        media(type: MANGA) { id }
-        pageInfo { total }
-      }
-      characters: Page(page: 1, perPage: 1) {
-        characters { id }
-        pageInfo { total }
-      }
-      studios: Page(page: 1, perPage: 1) {
-        studios { id }
-        pageInfo { total }
-      }
-    }`,
-  );
-
-  const fmt = (n: number) => n.toLocaleString("en-US");
-
-  return [
-    { value: fmt(data.anime?.pageInfo?.total ?? 0), label: "Anime" },
-    { value: fmt(data.manga?.pageInfo?.total ?? 0), label: "Manga" },
-    { value: fmt(data.characters?.pageInfo?.total ?? 0), label: "Characters" },
-    { value: fmt(data.studios?.pageInfo?.total ?? 0), label: "Studios" },
-  ];
-}
-
 export type HomeData = {
   topAnime: AnimeItem[];
   trending: string[];
@@ -578,15 +558,18 @@ export async function getHomeData(): Promise<HomeData> {
   const { season, year } = getCurrentSeason();
   const seasonLabel = `${season.charAt(0)}${season.slice(1).toLowerCase()} ${year}`;
 
-  const [topAnime, trending, stats, schedule, seasonalAnime] = await Promise.all([
-    safe(getTopAnime(20), [] as AnimeItem[]),
-    safe(getTrendingSearches(6), [] as string[]),
-    safe(getStats(), [] as StatItem[]),
-    safe(getAiringSchedule(), [] as ScheduleItem[]),
+  const [batch, schedule] = await Promise.all([
     safe(
-      getSeasonalAnimePage({ season, year, perPage: 6 }).then((r) => r.anime),
-      [] as AnimeItem[],
+      getHomeBatch(season, year),
+      {
+        topAnime: [] as AnimeItem[],
+        trending: [] as string[],
+        stats: [] as StatItem[],
+        seasonalAnime: [] as AnimeItem[],
+      },
     ),
+    safe(getAiringSchedule(), [] as ScheduleItem[]),
   ]);
-  return { topAnime, trending, stats, schedule, seasonalAnime, seasonLabel };
+
+  return { ...batch, schedule, seasonLabel };
 }

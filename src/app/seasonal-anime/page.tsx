@@ -5,6 +5,7 @@ import SeasonalAnimeExplorer from "@/components/SeasonalAnimeExplorer";
 import {
   getSeasonalAnimePage,
   getGenres,
+  parseGenres,
   type MediaSortOption,
 } from "@/lib/fetchers";
 import {
@@ -56,7 +57,7 @@ export default async function SeasonalAnimePage({
   const sort: MediaSortOption =
     first(sp.sort) === "SCORE_DESC" ? "SCORE_DESC" : "POPULARITY_DESC";
   const status = first(sp.status) ?? null;
-  const genre = first(sp.genre) ?? null;
+  const selectedGenres = parseGenres(sp.genre);
   const format = first(sp.format) ?? null;
   const search = first(sp.search) ?? null;
 
@@ -68,7 +69,7 @@ export default async function SeasonalAnimePage({
       perPage: PER_PAGE,
       sort,
       status,
-      genre,
+      genres: selectedGenres.length ? selectedGenres : null,
       format,
       search,
       season,
@@ -128,7 +129,7 @@ export default async function SeasonalAnimePage({
           seasonOptions={seasonOptions}
           sort={sort}
           status={status ?? "All"}
-          genre={genre ?? "All"}
+          selectedGenres={selectedGenres}
           format={format ?? "All"}
           search={search ?? ""}
           genres={genres}
