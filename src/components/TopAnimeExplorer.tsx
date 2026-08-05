@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import type { AnimeItem } from "@/lib/types";
 import type { AnimePageInfo, MediaSortOption } from "@/lib/fetchers";
 import { buildMediaSlug } from "@/lib/slug";
+import { TableSkeleton } from "@/components/CardSkeleton";
 
 const ANILIST_MAX_ENTRIES = 5000;
 
@@ -55,7 +56,6 @@ export default function TopAnimeExplorer({
   status,
   selectedGenres,
   format,
-  search,
   genres,
 }: {
   anime: AnimeItem[];
@@ -64,16 +64,11 @@ export default function TopAnimeExplorer({
   status: string;
   selectedGenres: string[];
   format: string;
-  search: string;
   genres: string[];
 }) {
   const router = useRouter();
   const tableRef = useRef<HTMLDivElement>(null);
-  const [searchInput, setSearchInput] = useState(search);
-
-  useEffect(() => {
-    setSearchInput(search);
-  }, [search]);
+  const [navigating, setNavigating] = useState(false);
 
   const buildUrl = useCallback(
     (overrides: Record<string, string | string[] | null>) => {
@@ -82,7 +77,6 @@ export default function TopAnimeExplorer({
         status: status && status !== "All" ? status : null,
         genre: selectedGenres.length ? selectedGenres : null,
         format: format !== "All" ? format : null,
-        search: search.trim() || null,
       };
       if (sort !== "SCORE_DESC") current.sort = sort;
       const merged = { ...current, ...overrides };
@@ -98,19 +92,25 @@ export default function TopAnimeExplorer({
       const qs = params.toString();
       return qs ? `/top-anime?${qs}` : "/top-anime";
     },
-    [sort, status, selectedGenres, format, search],
+    [sort, status, selectedGenres, format],
   );
 
-  useEffect(() => {
-    const trimmed = searchInput.trim();
-    if (trimmed === search.trim()) return;
-    const t = setTimeout(() => {
-      router.push(buildUrl({ search: trimmed || null }));
-    }, 400);
-    return () => clearTimeout(t);
-  }, [searchInput, search, buildUrl, router]);
+  const navigate = useCallback(
+    (overrides: Record<string, string | string[] | null>) => {
+      setNavigating(true);
+      router.push(buildUrl(overrides));
+    },
+    [router, buildUrl],
+  );
 
   const { currentPage, total, perPage } = pageInfo;
+
+  const filtersKey = `${currentPage}|${sort}|${status}|${format}|${selectedGenres.join(",")}`;
+  const lastFiltersKey = useRef(filtersKey);
+  if (lastFiltersKey.current !== filtersKey) {
+    lastFiltersKey.current = filtersKey;
+    setNavigating(false);
+  }
   const maxPage = Math.max(1, Math.floor(ANILIST_MAX_ENTRIES / perPage));
   const totalPages = Math.max(1, Math.min(maxPage, Math.ceil(total / perPage)));
   const lastPage = pageInfo.hasNextPage
@@ -123,26 +123,26 @@ export default function TopAnimeExplorer({
   const hasFilters =
     status !== "All" ||
     selectedGenres.length > 0 ||
-    format !== "All" ||
-    Boolean(search.trim());
+    format !== "All";
 
   function toggleGenre(g: string) {
     const next = selectedGenres.includes(g)
       ? selectedGenres.filter((x) => x !== g)
       : [...selectedGenres, g];
-    router.push(buildUrl({ genre: next.length ? next : null }));
+    navigate({ genre: next.length ? next : null });
   }
 
   function resetFilters() {
     const params = new URLSearchParams();
     if (sort !== "SCORE_DESC") params.set("sort", sort);
     const qs = params.toString();
+    setNavigating(true);
     router.push(qs ? `/top-anime?${qs}` : "/top-anime");
   }
 
   function goToPage(p: number) {
     const target = Math.min(Math.max(1, p), lastPage);
-    router.push(buildUrl({ page: String(target) }));
+    navigate({ page: String(target) });
     tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -157,18 +157,7 @@ export default function TopAnimeExplorer({
             </h2>
           </div>
           <p className="mt-1 text-sm text-muted">
-            Community rankings updated daily ·{" "}
-            {total > 0 ? (
-              <>
-                Showing{" "}
-                <span className="font-semibold text-foreground">
-                  {rangeStart.toLocaleString()}–{rangeEnd.toLocaleString()}
-                </span>{" "}
-                of {cappedTotal.toLocaleString()}
-              </>
-            ) : (
-              "No results"
-            )}
+            Community rankings updated daily
           </p>
         </div>
 
@@ -176,7 +165,7 @@ export default function TopAnimeExplorer({
           {sortTabs.map((t) => (
             <button
               key={t.value}
-              onClick={() => router.push(buildUrl({ sort: t.value }))}
+              onClick={() => navigate({ sort: t.value })}
               className={`relative rounded-md px-3 py-1.5 text-xs font-medium transition ${
                 sort === t.value ? "text-white" : "text-muted hover:text-foreground"
               }`}
@@ -194,35 +183,12 @@ export default function TopAnimeExplorer({
         </div>
       </div>
 
-      <div className="mb-5 flex flex-col gap-3 rounded-xl border border-border bg-surface p-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <svg
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-4.35-4.35M11 19a8 8 0 110-16 8 8 0 010 16z"
-            />
-          </svg>
-          <input
-            type="text"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search by title..."
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-subtle outline-none transition focus:border-accent"
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-2">
+      <div className="rounded-lg border border-border bg-surface">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
           <select
             value={status}
-            onChange={(e) => router.push(buildUrl({ status: e.target.value }))}
-            className="rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-muted outline-none transition focus:border-accent"
+            onChange={(e) => navigate({ status: e.target.value })}
+            className="ml-auto rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-muted outline-none transition focus:border-accent"
           >
             {statusOptions.map((s) => (
               <option key={s.value} value={s.value} className="bg-surface text-foreground">
@@ -233,7 +199,7 @@ export default function TopAnimeExplorer({
 
           <select
             value={format}
-            onChange={(e) => router.push(buildUrl({ format: e.target.value }))}
+            onChange={(e) => navigate({ format: e.target.value })}
             className="rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-muted outline-none transition focus:border-accent"
           >
             {formatOptions.map((f) => (
@@ -242,48 +208,69 @@ export default function TopAnimeExplorer({
               </option>
             ))}
           </select>
-
-          {hasFilters && (
-            <button
-              onClick={resetFilters}
-              className="rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-muted transition hover:text-accent"
-            >
-              Clear
-            </button>
-          )}
         </div>
-      </div>
 
-      <div className="mb-5 flex flex-wrap gap-1.5">
-        <button
-          onClick={() => router.push(buildUrl({ genre: null }))}
-          className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-            selectedGenres.length === 0
-              ? "border-accent bg-accent/10 text-accent-strong"
-              : "border-border bg-surface text-muted hover:border-accent hover:text-foreground"
-          }`}
-        >
-          All
-        </button>
-        {genres.map((g) => (
+        <div className="flex flex-wrap items-center gap-2 p-4">
+          <span className="mr-1 font-mono text-[0.75rem] uppercase tracking-[0.2em] text-subtle">
+            Genre
+          </span>
           <button
-            key={g}
-            onClick={() => toggleGenre(g)}
+            onClick={() => navigate({ genre: null })}
             className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-              selectedGenres.includes(g)
+              selectedGenres.length === 0
                 ? "border-accent bg-accent/10 text-accent-strong"
                 : "border-border bg-surface text-muted hover:border-accent hover:text-foreground"
             }`}
           >
-            {g}
+            All
           </button>
-        ))}
+          {genres.map((g) => (
+            <button
+              key={g}
+              onClick={() => toggleGenre(g)}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                selectedGenres.includes(g)
+                  ? "border-accent bg-accent/10 text-accent-strong"
+                  : "border-border bg-surface text-muted hover:border-accent hover:text-foreground"
+              }`}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div
-        ref={tableRef}
-        className="overflow-hidden rounded-2xl border border-border bg-surface"
-      >
+      <div className="mt-6 mb-5 flex flex-wrap items-center justify-between gap-3">
+        <p className="font-mono text-[0.8125rem] text-muted">
+          {total > 0 ? (
+            <>
+              Showing{" "}
+              <span className="font-semibold text-foreground">
+                {rangeStart.toLocaleString()}–{rangeEnd.toLocaleString()}
+              </span>{" "}
+              of {cappedTotal.toLocaleString()} titles
+            </>
+          ) : (
+            "No results"
+          )}
+        </p>
+        {hasFilters && (
+          <button
+            onClick={resetFilters}
+            className="rounded-full border border-border px-3 py-1 font-mono text-[0.8125rem] text-muted transition-colors hover:bg-surface-2 hover:text-foreground"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {navigating ? (
+        <TableSkeleton count={12} />
+      ) : (
+        <div
+          ref={tableRef}
+          className="overflow-hidden rounded-2xl border border-border bg-surface"
+        >
         <div className="hidden grid-cols-[3rem_1fr_5rem_5rem_6rem] gap-4 border-b border-border px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-subtle md:grid">
           <div>Rank</div>
           <div>Title</div>
@@ -296,7 +283,7 @@ export default function TopAnimeExplorer({
           <div className="px-5 py-16 text-center">
             <p className="text-sm font-medium text-foreground">No results</p>
             <p className="mt-1 text-xs text-subtle">
-              Try adjusting your filters or search query.
+              Try adjusting your filters.
             </p>
             {hasFilters && (
               <button
@@ -414,6 +401,7 @@ export default function TopAnimeExplorer({
           </AnimatePresence>
         )}
       </div>
+      )}
 
       {lastPage > 1 && (
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">

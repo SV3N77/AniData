@@ -32,10 +32,9 @@ export default async function TopAnimePage({
   const status = first(sp.status) ?? null;
   const selectedGenres = parseGenres(sp.genre);
   const format = first(sp.format) ?? null;
-  const search = first(sp.search) ?? null;
 
   const [result, genres] = await Promise.all([
-    getAnimePage({ page, perPage: PER_PAGE, sort, status, genres: selectedGenres.length ? selectedGenres : null, format, search }).catch(
+    getAnimePage({ page, perPage: PER_PAGE, sort, status, genres: selectedGenres.length ? selectedGenres : null, format }).catch(
       (err) => {
         console.error("[anilist]", err);
         return {
@@ -89,7 +88,6 @@ export default async function TopAnimePage({
           status={status ?? "All"}
           selectedGenres={selectedGenres}
           format={format ?? "All"}
-          search={search ?? ""}
           genres={genres}
         />
       </main>

@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { MangaItem } from "@/lib/types";
 import type { AnimePageInfo, MediaSortOption } from "@/lib/fetchers";
 import { buildMediaSlug } from "@/lib/slug";
+import { CardGridSkeleton } from "@/components/CardSkeleton";
 
 const sortTabs: { label: string; value: MediaSortOption }[] = [
   { label: "Most Popular", value: "POPULARITY_DESC" },
@@ -87,6 +88,7 @@ export default function MangaExplorer({
   const [currentPage, setCurrentPage] = useState<number>(pageInfo.currentPage);
   const [hasMore, setHasMore] = useState<boolean>(pageInfo.hasNextPage);
   const [loading, setLoading] = useState<boolean>(false);
+  const [navigating, setNavigating] = useState<boolean>(false);
 
   const filtersKey = `${sort}|${status}|${selectedGenres.join(",")}|${format}|${search}`;
   const lastFiltersKey = useRef(filtersKey);
@@ -96,6 +98,7 @@ export default function MangaExplorer({
     setCurrentPage(pageInfo.currentPage);
     setHasMore(pageInfo.hasNextPage);
     setLoading(false);
+    setNavigating(false);
   }
 
   useEffect(() => {
@@ -139,6 +142,7 @@ export default function MangaExplorer({
 
   const navigate = useCallback(
     (overrides: Record<string, string | string[] | null>) => {
+      setNavigating(true);
       router.push(buildUrl(overrides));
     },
     [router, buildUrl],
@@ -148,6 +152,7 @@ export default function MangaExplorer({
     const trimmed = searchInput.trim();
     if (trimmed === search.trim()) return;
     const t = setTimeout(() => {
+      setNavigating(true);
       router.push(buildUrl({ search: trimmed || null }));
     }, 400);
     return () => clearTimeout(t);
@@ -177,6 +182,7 @@ export default function MangaExplorer({
   function resetFilters() {
     const params = new URLSearchParams();
     const qs = params.toString();
+    setNavigating(true);
     router.push(qs ? `/manga?${qs}` : "/manga");
   }
 
@@ -387,7 +393,9 @@ export default function MangaExplorer({
             </button>
           </div>
 
-          {items.length === 0 ? (
+          {navigating ? (
+            <CardGridSkeleton count={9} />
+          ) : items.length === 0 ? (
             <div className="rounded-2xl border border-border bg-surface px-5 py-16 text-center">
               <p className="text-sm font-medium text-foreground">No results</p>
               <p className="mt-1 text-xs text-subtle">
@@ -469,7 +477,7 @@ export default function MangaExplorer({
             </div>
           )}
 
-          {items.length > 0 && (
+          {!navigating && items.length > 0 && (
             <div ref={sentinelRef} className="mt-8 flex justify-center py-4">
               {loading ? (
                 <div className="flex items-center gap-2 text-sm text-muted">
